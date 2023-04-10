@@ -4,6 +4,22 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBo
     QGroupBox, QTableWidget, QTableWidgetItem
 
 
+FIELDS = ['tag', 'stance', 'path', 'value', 'label', 'translate_cn', 'comments', 'weight', 'statistics']
+from collections import OrderedDict
+
+COLUMNS = OrderedDict([
+    ('Tag', 'tag'),
+    ('Group', 'path'),
+    ('Value', 'value'),
+    ('Bookmark', 'label'),
+    ('Name', 'translate_cn'),
+    ('Comments', 'comments')
+])
+
+
+COL2FIELD = list(COLUMNS.values())
+
+
 def load_tag_data():
     # Load public.csv to df_public if it exists
     try:
@@ -21,10 +37,9 @@ def load_tag_data():
     df_tags = pd.merge(df_public, df_private, on='tag', how='outer')
 
     # Check if any of the required fields are missing in df_tags
-    if not {'tag', 'stance', 'path', 'value', 'label', 'translate_cn', 'comments', 'weight',
-            'statistics'}.issubset(df_tags.columns):
+    if not set(FIELDS).issubset(df_tags.columns):
         # Add the missing fields to df_tags
-        df_tags = df_tags.reindex(columns=['tag', 'stance', 'path', 'value', 'label', 'translate_cn', 'comments', 'weight', 'statistics'])
+        df_tags = df_tags.reindex(columns=FIELDS)
     
     # Replace NaN or null values with empty strings
     df_tags = df_tags.fillna('')
@@ -56,10 +71,39 @@ def parse_tags(prompt_text: str):
     return positive_tags, negative_tags, extra_data
 
 
+def dataframe_to_table(
+    table_widget: QTableWidget, dataframe: pd.DataFrame, 
+    field_mapping: OrderedDict, extra_fields: List[str]):
+    # Clear the table
+    table_widget.clear()
+    table_widget.setRowCount(0)
+    
+    # Set the column count for the table
+    table_widget.setColumnCount(len(field_mapping) + len(extra_fields))
+    
+    # Set the horizontal header labels for the table
+    header_labels = [field.capitalize() for field in field_mapping.keys()] + extra_fields
+    table_widget.setHorizontalHeaderLabels(header_labels)
+    
+    # Set the row count for the table
+    table_widget.setRowCount(len(dataframe))
+    
+    # Fill the table with data from the dataframe
+    for row in range(len(dataframe)):
+        for col, field in enumerate(field_mapping.values()):
+            item = QTableWidgetItem(str(dataframe.loc[row, field]))
+            table_widget.setItem(row, col, item)
+        for col, field in enumerate(extra_fields, start=len(field_mapping)):
+            item = QTableWidgetItem('')
+            table_widget.setItem(row, col, item)
+
+
 
 class AnalysisWindow(QWidget):
     def __init__(self):
         super().__init__()
+        self.tag_database = pd.DataFrame(columns=['tag'])
+
         # Create the root layout
         root_layout = QVBoxLayout(self)
         # Create the top horizontal layout
@@ -122,6 +166,37 @@ class AnalysisWindow(QWidget):
         self.negative_table.setRowCount(len(negative_tags))
         for i, tag in enumerate(negative_tags):
             self.negative_table.setItem(i, 0, QTableWidgetItem(tag))
+  
+    # def on_button_edit(self, table_widget: QTableWidget, edit_row: int):
+    #     # Get data from the table and update to self.tag_database
+    #     for col, field in enumerate(COL2FIELD.values()):
+    #         item = table_widget.item(edit_row, col)
+    #         if item is not None:
+    #             value = item.text()
+    #             key = table_widget.item(edit_row, 0).text()
+    #             if key in self.tag_database.index:
+    #                 self.tag_database.loc[key, field] = value
+    #             else:
+    #                 new_row = pd.Series({field: value}, name=key)
+    #                 self.tag_database = self.tag_database.append(new_row)
+
+    #     # Update the positive and negative tables
+    #     self.update_tables()
+
+    # def update_tables(self):
+    #     # Update positive_tags to positive_table
+    #     positive_tags = self.tag_database[self.tag_database['tag'] == 1]['tag'].tolist()
+    #     self.positive_table.setRowCount(len(positive_tags))
+    #     for i, tag in enumerate(positive_tags):
+    #         self.positive_table.setItem(i, 0, QTableWidgetItem(tag))
+
+    #     # Update negitive_tags to negative_table
+    #     negative_tags = self.tag_database[self.tag_database['tag'] == 0]['tag'].tolist()
+    #     self.negative_table.setRowCount(len(negative_tags))
+    #     for i, tag in enumerate(negative_tags):
+    #         self.negative_table.setItem(i, 0, QTableWidgetItem(tag))
+
+
 
 
 class MainWindow(QMainWindow):

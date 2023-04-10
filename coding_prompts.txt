@@ -16,3 +16,15 @@ write a function named parse_tags, accept a prompt_text as str. Split it by '\n'
 call parse_tags with the input of self.text_edit. receive the inputs as positive_tags, negitive_tags, extra_data. Update positive_tags to positive_table and negitive_tags to negative_table
 
 
+add columns to self.positive_table and self.negative_table: tag, stance, path, value, lable,translate_cn,comments,weight,statistics, action
+
+declare a COLUMNS as ordered dict with all strings: Tag: tag, Group: path, Value: value, Bookmark: lable, Name: translate_cn, Comments: comments
+
+
+a function for dataframe to QTableWidget, with 4 parameters: QTableWidget, dataframe, field_mapping as ordered dict, extra_fields as string list. Clear the table, and rebuild the columns by field_mapping keys + extra_fields. Fill dataframe data into the table and leaving the extra_fields columns empty.
+
+
+add a member function named on_button_edit, with 2 parameters: QTableWidget, edit_row as int. Get data from the table and update to self.tag_database, follow the mapping of COL2FIELD, which index to table column and the value on index as the field of dataframe. The first column value is the unique major key to the dataframe. If the key does not exists, add a new row to dataframe.
+
+
+add a member function named update_positive_table. Filter 
