@@ -1,0 +1,18 @@
+add a window named AnalysisWindow. The root layout is vertical line layout. it has 2 horizon layout weight 3 and 7. On up area, there's a multiple text edit and a reserved area. space ratio is 70% 30%. The down area has 2 multiple column tables parallel in vertical in average. tables wrapped by group widget named: Positive, Negitive. 
+
+
+write a load_tags function to load public.csv to DataFrame df_public and private.csv to df_pvivate. and join them by field "tag" to a df_tags. Note that one or both of them may not exist. df_tags should not be null. df_tags should at leat has following fileds: tag, stance, path, value, lable,translate_cn,comments,weight,statistics. if the field data is nan or null. should set as empty string.
+
+if df_tags has no one of following fileds: tag, stance, path, value, lable,translate_cn,comments,weight,statistics. Add the filed
+
+
+move layout code to init_ui, keep member init code in __init__
+
+
+write a function named parse_tags, accept a prompt_text as str. Split it by '\n' and strip each line, remove empty lines. For the line 0 and 1, if there's a ':' before any ',', remove the sub string before ':' and ':' it self. split line 0 and 1 by ',' and strip each sub string. line 0 is positive_tags, line 1 is negitive_tags. line 0 not exists, positive_tags should be empty list, same to negitive_tags. The rest lines should be joined by '\n' as extra_data. If no more lines extra_data should be empty string. return positive_tags, negitive_tags, extra_data
+
+
+
+call parse_tags with the input of self.text_edit. receive the inputs as positive_tags, negitive_tags, extra_data. Update positive_tags to positive_table and negitive_tags to negative_table
+
+
