@@ -1,0 +1,199 @@
+{
+    "req_meta": {
+        "Owner": [],
+        "Version": [],
+        "Status": [
+            "Draft",
+            "Submitted",
+            "Reviewing",
+            "Reserved",
+            "Approved",
+            "Deferred",
+            "Rejected"
+        ],
+        "Priority": [
+            "Must / Vital",
+            "Should / Necessary",
+            "Could / Nice to Have",
+            "To Be Defined"
+        ],
+        "Implementation": [
+            "Not Implemented",
+            "Planing",
+            "Designing",
+            "Implementing",
+            "Verifying",
+            "Full Implemented",
+            "Partial Implemented"
+        ],
+        "meta_group": [
+            "WHY",
+            "WHAT",
+            "HOW"
+        ]
+    },
+    "req_data": {
+        "title": "SD Tags Analyzer",
+        "child": [
+            {
+                "id": "",
+                "uuid": "d5c10e795c4b489f9020ab0d6eb7d656",
+                "title": "Why",
+                "content": "",
+                "Owner": "",
+                "Version": "",
+                "Status": "",
+                "Priority": "",
+                "Implementation": "",
+                "child": [
+                    {
+                        "id": "",
+                        "uuid": "3a6298fb1d8d42c1a12da6728cfa2eaa",
+                        "title": "tag分析",
+                        "content": "输入tags分析每一个已知tag的用途。\n\n+ 按tag的主类别group tags\n\n+ 区分哪些tags是普通套路哪些tags是有价值的。用颜色区分。\n\n+ 对于已经的tag，可以随时编辑和更新信息\n\n+ 特殊tag的分析转换，如lora标签，使其更易读\n\n+ 权重分析转换，剥离原始\n\n对于非已知tag，需要额外列出来。用户可以手动将其归类，配置属性。",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "",
+                        "Priority": "",
+                        "Implementation": "",
+                        "child": []
+                    },
+                    {
+                        "id": "",
+                        "uuid": "24ab72bf07574ce0a5b0c4d4d5465f58",
+                        "title": "tag查询与组合",
+                        "content": "按类别浏览tag，勾选tag\n\n按收藏夹批量添加tag\n",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "",
+                        "Priority": "",
+                        "Implementation": "",
+                        "child": []
+                    },
+                    {
+                        "id": "",
+                        "uuid": "288a3e2bf42a42e09dbda2d7b1cb5d2c",
+                        "title": "tag信息",
+                        "content": "tag信息应当包含以下内容（列/字段/属性）：\n\n+ tag\n\n> tag本身\n\n+ 立场（stance）\n\n> 正面tag，反面tag，中立tag（视情况可以放在正面或反面tag）\n\n+ 类别（path）\n\n> tag所属的类别，类别下可以分子类别，故用/分隔的path表示。如头发，衣服，等等\n\n+ 价值（value）\n\n> 越有效果的，越有价值。在tag分析时价值越高的tag会以更醒目的颜色显示。\n\n+ 收藏夹（lable）\n\n> 其实就是标签。我们可以把一些组合放入一个收藏夹，以便需要时批量添加。\n\n+ 翻译\n\n> 多个字段，如translate_cn。用以reserve for多国语言支持。\n\n+ 说明（comments）\n\n> 任何想添加的信息\n\n+ 默认权重（weight）\n\n> 添加时会使用这个默认权重\n\n+ 统计（statistics）\n\n> 统计这个tag在分析的案例中出现的次数。越多说明这个tag越通用。\n\n> 需要一键清零所有统计功能。",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "",
+                        "Priority": "",
+                        "Implementation": "",
+                        "child": []
+                    },
+                    {
+                        "id": "",
+                        "uuid": "f67b47b2f73647a1b3e01b5a6bef2c05",
+                        "title": "数据存储",
+                        "content": "数据应当存储为csv格式，理由如下：\n\n1. 适合git\n\n2. 方便比较和合并\n\n3. 可以放入Excel进行分析 ",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "",
+                        "Priority": "",
+                        "Implementation": "",
+                        "child": []
+                    },
+                    {
+                        "id": "",
+                        "uuid": "48ac3a021f384bba93103588cc076c1d",
+                        "title": "参考标签组",
+                        "content": "遇到好图，可以把他的那一组tags及图片保存下来作为参考。",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "",
+                        "Priority": "",
+                        "Implementation": "",
+                        "child": []
+                    },
+                    {
+                        "id": "",
+                        "uuid": "a78c6e5ed9ec46a08038c3cec1a8aa60",
+                        "title": "灵感提供",
+                        "content": "",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "",
+                        "Priority": "",
+                        "Implementation": "",
+                        "child": []
+                    },
+                    {
+                        "id": "",
+                        "uuid": "c5bc533939dc48c0b67c9e6b3c4a84a0",
+                        "title": "批量生成（抽卡）支持",
+                        "content": "可以生成供抽卡的tag文本文件",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "",
+                        "Priority": "",
+                        "Implementation": "",
+                        "child": []
+                    }
+                ]
+            },
+            {
+                "id": "",
+                "uuid": "f8aca17aeff44612b61b8d92289bb7ba",
+                "title": "What",
+                "content": "",
+                "Owner": "",
+                "Version": "",
+                "Status": "",
+                "Priority": "",
+                "Implementation": "",
+                "child": [
+                    {
+                        "id": "",
+                        "uuid": "1f92cc87d9d642a0afca2d4f74a9cf24",
+                        "title": "界面设计",
+                        "content": "tag的展示使用列表而非复杂效果，节约时间。",
+                        "Owner": "",
+                        "Version": "",
+                        "Status": "",
+                        "Priority": "",
+                        "Implementation": "",
+                        "child": [
+                            {
+                                "id": "",
+                                "uuid": "aa0a575598ad47478db85cc52ffe883b",
+                                "title": "tag分析",
+                                "content": "左侧两个输入框，一个是正面tag，一个是反面tag。\n\n右侧是tag分析结果列表，从上至下分别为正面（weight:50%），反面（weight:30%），未识别(weight:20%)。\n\n左侧下方是分类的格子。\n\n对于任何一个列表，双击可进入编辑界面。\n\n对于未识别列表，可以将项目拖入左下方的分类，直接将其加入数据库中。",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "",
+                                "Priority": "",
+                                "Implementation": "",
+                                "child": []
+                            },
+                            {
+                                "id": "",
+                                "uuid": "aec9e08ecaa74dab87595eb3778ccfb7",
+                                "title": "tag查询与组合",
+                                "content": "",
+                                "Owner": "",
+                                "Version": "",
+                                "Status": "",
+                                "Priority": "",
+                                "Implementation": "",
+                                "child": []
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "id": "",
+                "uuid": "35d8c546ff6045a49134f8843ed3f427",
+                "title": "How",
+                "content": "",
+                "Owner": "",
+                "Version": "",
+                "Status": "",
+                "Priority": "",
+                "Implementation": "",
+                "child": []
+            }
+        ]
+    }
+}
