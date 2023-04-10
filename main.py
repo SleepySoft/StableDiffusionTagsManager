@@ -38,11 +38,11 @@ def parse_tags(prompt_text: str):
     lines = [line.strip() for line in prompt_text.split('\n') if line.strip()]
     
     # If line 0 exists and there's a ':' before any ',', remove the sub string before ':' and ':' it self
-    if lines and ':' in lines[0] and ',' in lines[0][:lines[0].index(':')]:
+    if lines and ':' in lines[0] and ',' in lines[0][lines[0].index(':'):]:
         lines[0] = lines[0][lines[0].index(':')+1:]
     
     # If line 1 exists and there's a ':' before any ',', remove the sub string before ':' and ':' it self
-    if len(lines) > 1 and ':' in lines[1] and ',' in lines[1][:lines[1].index(':')]:
+    if len(lines) > 1 and ':' in lines[1] and ',' in lines[1][lines[1].index(':'):]:
         lines[1] = lines[1][lines[1].index(':')+1:]
     
     # Split line 0 by ',' and strip each sub string. line 0 is positive_tags, line 1 is negitive_tags.
