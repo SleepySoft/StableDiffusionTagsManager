@@ -2,24 +2,33 @@ import sys
 import pandas as pd
 from collections import OrderedDict
 
+from PyQt5 import QtCore
 from PyQt5.QtCore import Qt, QDataStream
 from PyQt5.QtCore import QMimeData
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QPlainTextEdit, \
     QGroupBox, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QAbstractItemView, QDialog, QPushButton, \
     QDialogButtonBox
 
-DATABASE_FIELDS = ['tag', 'stance', 'path', 'value', 'label', 'translate_cn', 'comments', 'weight', 'statistics']
 
-ANALYSIS_COLUMNS = OrderedDict([
-    ('Tag', 'tag'),
-    ('Group', 'path'),
-    ('Value', 'value'),
-    ('Bookmark', 'label'),
-    ('Name', 'translate_cn'),
-    ('Comments', 'comments')
+DATABASE_SUPPORT_FIELD = OrderedDict([
+    ('tag', '标签'),
+    ('path', '功能分组'),
+    ('value', '标签价值'),
+    ('translate_cn', '翻译'),
+    ('comments', '备注'),
+    ('weight', '默认权重'),
+    ('label', '收藏夹'),
+    ('stance', '私有（Y/N）'),
+    ('statistics', '统计')
 ])
 
-ANALYSIS_COL2FIELD = list(ANALYSIS_COLUMNS.values())
+DATABASE_FIELDS = list(DATABASE_SUPPORT_FIELD.keys())
+
+ANALYSIS_DISPLAY_FIELD = ['tag', 'path', 'value', 'translate_cn', 'comments']
+
+ANALYSIS_SHOW_COLUMNS = OrderedDict()
+for f in ANALYSIS_DISPLAY_FIELD:
+    ANALYSIS_SHOW_COLUMNS[f] = DATABASE_SUPPORT_FIELD[f]
 
 
 def load_tag_data():
@@ -75,17 +84,17 @@ def parse_tags(prompt_text: str):
 
 def dataframe_to_table_widget(
         table_widget: QTableWidget, dataframe: pd.DataFrame,
-        field_mapping: OrderedDict, extra_fields: [str]):
+        field_mapping: OrderedDict, extra_headers: [str]):
 
     # Clear the table
     table_widget.clear()
     table_widget.setRowCount(0)
 
     # Set the column count for the table
-    table_widget.setColumnCount(len(field_mapping) + len(extra_fields))
+    table_widget.setColumnCount(len(field_mapping) + len(extra_headers))
 
     # Set the horizontal header labels for the table
-    header_labels = [field.capitalize() for field in field_mapping.keys()] + extra_fields
+    header_labels = [field.capitalize() for field in field_mapping.values()] + extra_headers
     table_widget.setHorizontalHeaderLabels(header_labels)
 
     # Set the row count for the table
@@ -93,10 +102,10 @@ def dataframe_to_table_widget(
 
     # Fill the table with data from the dataframe
     for row in range(len(dataframe)):
-        for col, field in enumerate(field_mapping.values()):
+        for col, field in enumerate(field_mapping.keys()):
             item = QTableWidgetItem(str(dataframe.loc[row, field]))
             table_widget.setItem(row, col, item)
-        for col, field in enumerate(extra_fields, start=len(field_mapping)):
+        for col, field in enumerate(extra_headers, start=len(field_mapping)):
             item = QTableWidgetItem('')
             table_widget.setItem(row, col, item)
 
@@ -137,13 +146,13 @@ class DataFrameRowEditDialog(QDialog):
 
         # Fill the table with data from the row
         for row_idx, (field, value) in enumerate(row.items()):
-            if field in field_name_mapping:
+            if field in field_name_mapping.keys():
                 display_name = field_name_mapping[field]
             else:
                 display_name = field
             item = QTableWidgetItem(display_name)
             item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-            item.setData(0, field)
+            item.setData(QtCore.Qt.UserRole, field)
             self.table_widget.setItem(row_idx, 0, item)
 
             item = QTableWidgetItem(str(value))
@@ -183,7 +192,7 @@ class DataFrameRowEditDialog(QDialog):
         for row_idx in range(self.table_widget.rowCount()):
             field_item = self.table_widget.item(row_idx, 0)
             value_item = self.table_widget.item(row_idx, 1)
-            field_name = field_item.data(0)
+            field_name = field_item.data(QtCore.Qt.UserRole)
             if field_item and value_item:
                 data[field_name] = value_item.text().strip()
 
@@ -345,8 +354,8 @@ class AnalysisWindow(QWidget):
         else:
             self.negative_df = self.negative_df.merge(self.tag_database, on='tag', how='left').fillna('')
 
-        dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_COLUMNS, [])
-        dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_COLUMNS, [])
+        dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [])
+        dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [])
 
     # Define a function to be called when a cell in the positive table is double clicked
     def on_positive_table_double_click(self, row, column):
@@ -354,20 +363,23 @@ class AnalysisWindow(QWidget):
         item = self.positive_table.item(row, 0)
         if item is not None:
             tag = item.text()
-            editor = DataFrameRowEditDialog(self.tag_database, {}, 'tag', tag)
+            editor = DataFrameRowEditDialog(self.tag_database, DATABASE_SUPPORT_FIELD, 'tag', tag)
             result = editor.exec_()
 
             if result == QDialog.Accepted:
-                dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_COLUMNS, [])
-                dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_COLUMNS, [])
+                dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [])
                 self.update_tag_path_tree()
 
     # Define a function to be called when a cell in the negative table is double clicked
     def on_negative_table_double_click(self, row, column):
         # Get the tag from the selected row
         tag = self.negative_table.item(row, 0).text()
-        editor = DataFrameRowEditDialog(self.tag_database, {}, 'tag', tag)
-        editor.exec_()
+        editor = DataFrameRowEditDialog(self.tag_database, DATABASE_SUPPORT_FIELD, 'tag', tag)
+        result = editor.exec_()
+
+        if result == QDialog.Accepted:
+            dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [])
+            self.update_tag_path_tree()
 
     def update_tag_path_tree(self):
         # Clear the tree
