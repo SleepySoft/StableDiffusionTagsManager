@@ -226,19 +226,78 @@ class DraggableTree(QTreeWidget):
         self.setDragEnabled(True)
         self.setDragDropMode(QAbstractItemView.DragDrop)
 
-    def dropEvent(self, event):
-        if event.source() == self:
-            super().dropEvent(event)
+    def dragEnterEvent(self, event):
+        # Get the mime data from the event
+        mime_data = event.mimeData()
+        # If the mime data contains text/plain data
+        if mime_data.hasFormat('text/plain'):
+            # Accept the drag operation
+            event.acceptProposedAction()
         else:
-            data = event.mimeData()
-            if data.hasFormat('application/x-qabstractitemmodeldatalist'):
-                ba = data.data('application/x-qabstractitemmodeldatalist')
-                ds = QDataStream(ba)
-                while not ds.atEnd():
-                    row = ds.readInt32()
-                    column = ds.readInt32()
-                    map_items = ds.readQVariantMap()
-                    print(map_items)
+            # Ignore the drag operation
+            event.ignore()
+
+    def dragMoveEvent(self, event):
+        # Get the mime data from the event
+        mime_data = event.mimeData()
+        # If the mime data contains text/plain data
+        if mime_data.hasFormat('text/plain'):
+            # Accept the drag operation
+            event.acceptProposedAction()
+        else:
+            # Ignore the drag operation
+            event.ignore()
+
+    def dropEvent(self, event):
+        # Get the mime data from the event
+        mime_data = event.mimeData()
+        # If the mime data contains text/plain data
+        if mime_data.hasFormat('text/plain'):
+            # Get the data as bytes and convert to string
+            data = bytes(mime_data.data('text/plain')).decode()
+            # Convert the string back to a list
+            selected_data = eval(data)
+            # Create a new row in the table for each selected item
+            for item in selected_data:
+                print(item)
+
+        # if event.source() == self:
+        #     super().dropEvent(event)
+        # else:
+        #     data = event.mimeData()
+        #     if data.hasFormat('application/x-qabstractitemmodeldatalist'):
+        #         ba = data.data('application/x-qabstractitemmodeldatalist')
+        #         ds = QDataStream(ba)
+        #         tag = ''
+        #         while not ds.atEnd():
+        #             # row = ds.readInt32()
+        #             # column = ds.readInt32()
+        #             map_items = ds.readQVariantMap()
+        #             print(map_items)
+        #             # Assume the first item is tag
+        #             # if len(map_items) > 0:
+        #             #     tag = map_items.values()[0]
+        #             # break
+        #         print(tag)
+
+
+class CustomTableWidget(QTableWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+        self.setDragEnabled(True)
+        self.setDragDropMode(QAbstractItemView.DragDrop)
+
+    def mimeData(self, indexes):
+        # Get the data from the first column of the selected rows
+        selected_data = []
+        for index in indexes:
+            if index.column() == 0:
+                selected_data.append(index.text())
+        # Create a mime data object and set the data
+        mime_data = QMimeData()
+        mime_data.setData('text/plain', str(selected_data).encode())
+        return mime_data
 
 
 class AnalysisWindow(QWidget):
@@ -271,7 +330,7 @@ class AnalysisWindow(QWidget):
         # Create the group widget for the positive table
         self.positive_group = QGroupBox("Positive", parent=self)
         # Create the multiple column table for the positive group
-        self.positive_table = QTableWidget(parent=self)
+        self.positive_table = CustomTableWidget(parent=self)
         self.positive_table.setColumnCount(2)
         self.positive_table.setRowCount(5)
         positive_group_layout = QVBoxLayout()
@@ -280,7 +339,7 @@ class AnalysisWindow(QWidget):
         # Create the group widget for the negative table
         self.negative_group = QGroupBox("Negative", parent=self)
         # Create the multiple column table for the negative group
-        self.negative_table = QTableWidget(parent=self)
+        self.negative_table = CustomTableWidget(parent=self)
         self.negative_table.setColumnCount(2)
         self.negative_table.setRowCount(5)
         negative_group_layout = QVBoxLayout()
