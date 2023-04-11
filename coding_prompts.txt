@@ -79,3 +79,14 @@ in dropEvent(), get the tree node it droped on. caclulate the full path from roo
 update dataframe self.database set the field 'path' as full_path where field 'tag' in list selected_data.
 
 
+for text, get the first index of ',' as i1 and get the first index of ':' as i2. If i2 >= 0 and i2 < i1, remove the string from text before and include ':'
+
+
+write a function named analysis_tag. accept 1 parameter named tag as string. Do following check:
+If the tag contains ":", then first try to remove the "()" surrounding it. If ":" is followed by a number, then the contents on both sides of ":" are raw_tag and tag_weight respectively
+
+else If the tag contains "|", then raw_tag = tag, tag_weight = 1,
+
+else initialize tag_weight to 1.0, tag is surrounded by '()' each layer, weight * 1.1. tag is surrounded by ‘[] each layer, weight * 0.9. raw_tag is the content after removing all brackets
+
+

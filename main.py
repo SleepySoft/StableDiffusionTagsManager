@@ -1,3 +1,4 @@
+import re
 import sys
 import pandas as pd
 from collections import OrderedDict
@@ -29,6 +30,9 @@ ANALYSIS_DISPLAY_FIELD = ['tag', 'path', 'value', 'translate_cn', 'comments']
 ANALYSIS_SHOW_COLUMNS = OrderedDict()
 for f in ANALYSIS_DISPLAY_FIELD:
     ANALYSIS_SHOW_COLUMNS[f] = DATABASE_SUPPORT_FIELD[f]
+
+
+PRESET_TAG_PATH = []
 
 
 def load_tag_data():
@@ -70,27 +74,76 @@ def save_tag_data(df: pd.DataFrame):
     df_public.to_csv('public.csv', index=False)
 
 
-def parse_tags(prompt_text: str):
+def parse_prompts(prompt_text: str):
     # Split the prompt_text by '\n' and strip each line, remove empty lines
     lines = [line.strip() for line in prompt_text.split('\n') if line.strip()]
 
-    # If line 0 exists and there's a ':' before any ',', remove the sub string before ':' and ':' it self
-    if lines and ':' in lines[0] and ',' in lines[0][lines[0].index(':'):]:
-        lines[0] = lines[0][lines[0].index(':') + 1:]
-
-    # If line 1 exists and there's a ':' before any ',', remove the sub string before ':' and ':' it self
-    if len(lines) > 1 and ':' in lines[1] and ',' in lines[1][lines[1].index(':'):]:
-        lines[1] = lines[1][lines[1].index(':') + 1:]
+    def trim_colon(text: str) -> str:
+        i1 = text.find(',')
+        i2 = text.find(':')
+        if i2 >= 0 and i2 < i1:
+            text = text[text.index(':') + 1:]
+        return text
 
     # Split line 0 by ',' and strip each sub string. line 0 is positive_tags, line 1 is negitive_tags.
-    positive_tags = [tag.strip() for tag in lines[0].split(',')] if lines else []
-    negative_tags = [tag.strip() for tag in lines[1].split(',')] if len(lines) > 1 else []
+    positive_tags = [tag.strip() for tag in trim_colon(lines[0]).split(',')] if len(lines) > 0 else []
+    negative_tags = [tag.strip() for tag in trim_colon(lines[1]).split(',')] if len(lines) > 1 else []
 
     # Join the rest lines by '\n' as extra_data. If no more lines extra_data should be empty string.
     extra_data = '\n'.join(lines[2:]) if len(lines) > 2 else ''
 
     # Return positive_tags, negitive_tags, extra_data
     return positive_tags, negative_tags, extra_data
+
+
+def analysis_tag(tag: str):
+    # Check if the tag contains ":"
+    if ":" in tag:
+        # Remove the "()" surrounding the ":" if they exist
+        tag = tag.strip("()")
+        # Split the tag by ":" and check if the second part is a number
+        parts = tag.split(":")
+        if parts[1].isdigit():
+            # If the second part is a number, set the raw_tag and tag_weight accordingly
+            raw_tag = parts[0]
+            tag_weight = int(parts[1])
+        else:
+            # If the second part is not a number, set the raw_tag to the entire tag and tag_weight to 1
+            raw_tag = tag
+            tag_weight = 1
+    # Check if the tag contains "|"
+    elif "|" in tag:
+        # If the tag contains "|", set the raw_tag to the entire tag and tag_weight to 1
+        raw_tag = tag
+        tag_weight = 1
+    else:
+        # If the tag does not contain ":" or "|", set the raw_tag to the content after removing all brackets
+        raw_tag = re.sub(r'[\(\)\[\]]', '', tag)
+        # Initialize the tag_weight to 1.0
+        tag_weight = 1.0
+        # Multiply the tag_weight by 1.1 for each layer of "()" surrounding the tag
+        for i in range(tag.count("(")):
+            tag_weight *= 1.1
+        # Multiply the tag_weight by 0.9 for each layer of "[]" surrounding the tag
+        for i in range(tag.count("[")):
+            tag_weight *= 0.9
+    # Return the raw_tag and tag_weight as a tuple
+    return raw_tag.strip(), tag_weight
+
+
+def tags_list_to_tag_data(tags: [str]):
+    data_tag = []
+    data_weight = []
+    for tag in tags:
+        raw_tag, tag_weight = analysis_tag(tag)
+        if len(raw_tag) == 0:
+            continue
+        data_tag.append(raw_tag)
+        data_weight.append(str(tag_weight))
+    return {
+        'tag': data_tag,
+        'weight': data_weight
+    }
 
 
 def dataframe_to_table_widget(
@@ -366,8 +419,6 @@ class AnalysisWindow(QWidget):
         root_layout.setStretch(0, 2)
         root_layout.setStretch(1, 8)
 
-        self.resize(1024, 768)
-
         # Connect the on_prompt_edit function to the textChanged signal of self.text_edit
         self.text_edit.textChanged.connect(self.on_prompt_edit)
 
@@ -394,19 +445,22 @@ class AnalysisWindow(QWidget):
 
     # Define a function to be called when the text in self.text_edit changes
     def on_prompt_edit(self):
-        # Call parse_tags with the input of self.text_edit
-        self.positive_tags, self.negative_tags, self.extra_data = parse_tags(self.text_edit.toPlainText())
+        # Call parse_prompts with the input of self.text_edit
+        self.positive_tags, self.negative_tags, self.extra_data = parse_prompts(self.text_edit.toPlainText())
+
+        positive_tag_data = tags_list_to_tag_data(self.positive_tags)
+        negative_tag_data = tags_list_to_tag_data(self.negative_tags)
 
         # Join positive_df with tag_database by 'tag' row. Keep all tag_database columns.
         # If the tag not in tag_database, the columns are empty string. The same to negative_df.
         if not self.tag_database.empty:
-            self.positive_df = pd.DataFrame({'tag': self.positive_tags})
-            self.negative_df = pd.DataFrame({'tag': self.negative_tags})
+            self.positive_df = pd.DataFrame(positive_tag_data)
+            self.negative_df = pd.DataFrame(negative_tag_data)
             self.positive_df = self.positive_df.merge(self.tag_database, on='tag', how='left').fillna('')
             self.negative_df = self.negative_df.merge(self.tag_database, on='tag', how='left').fillna('')
         else:
-            self.positive_df = pd.DataFrame({'tag': self.positive_tags}, columns=DATABASE_FIELDS)
-            self.negative_df = pd.DataFrame({'tag': self.negative_tags}, columns=DATABASE_FIELDS)
+            self.positive_df = pd.DataFrame(positive_tag_data, columns=DATABASE_FIELDS).fillna('')
+            self.negative_df = pd.DataFrame(negative_tag_data, columns=DATABASE_FIELDS).fillna('')
 
         dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [])
         dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [])
@@ -491,6 +545,8 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.analysis_tab, "Analysis")
         self.tabs.addTab(self.generate_tab, "Generate")
         self.setCentralWidget(self.tabs)
+        self.resize(1280, 800)
+        self.setWindowTitle('Stable Diffusion Tag 分析管理 - Sleepy')
 
 
 if __name__ == '__main__':
