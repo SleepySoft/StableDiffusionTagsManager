@@ -54,6 +54,7 @@ def load_tag_data():
 
     # Replace NaN or null values with empty strings
     df_tags = df_tags.fillna('')
+    df_tags = df_tags.reindex()
 
     # Return the resulting DataFrame
     return df_tags
@@ -206,18 +207,21 @@ class DataFrameRowEditDialog(QDialog):
             if field_item and value_item:
                 data[field_name] = value_item.text().strip()
 
-        if (df[self.unique_field] == self.unique_field_value).any():
-            df.loc[df[self.unique_field] == self.unique_field_value] = data
+        index = df.index[df[self.unique_field] == self.unique_field_value].tolist()
+        if not index:
+            index = len(df)
         else:
-            df.loc[len(df)] = data
+            index = index[0]
+        df.loc[index] = data
 
         # Call the base accept method to close the dialog
         super().accept()
 
 
 class DraggableTree(QTreeWidget):
-    def __init__(self, parent=None):
+    def __init__(self, database: pd.DataFrame, parent=None):
         super().__init__(parent)
+        self.database = database
         self.setAcceptDrops(True)
         self.setDragEnabled(True)
         self.setDragDropMode(QAbstractItemView.DragDrop)
@@ -285,7 +289,7 @@ class AnalysisWindow(QWidget):
         # Create the tree widget for the tree group
         self.tree_group = QGroupBox("Tree", parent=self)
         # Create the tree widget for the tree group
-        self.tree = DraggableTree(parent=self)
+        self.tree = DraggableTree(self.tag_database, parent=self)
         self.tree.setHeaderHidden(True)
         tree_group_layout = QVBoxLayout()
         tree_group_layout.addWidget(self.tree)
@@ -369,6 +373,9 @@ class AnalysisWindow(QWidget):
 
         # Loop through each unique path
         for path in unique_paths:
+            if path.strip() == '':
+                continue
+
             # Split the path into its individual parts
             parts = path.split('/')
 
@@ -377,6 +384,10 @@ class AnalysisWindow(QWidget):
 
             # Loop through each part of the path
             for part in parts:
+                part = part.strip()
+                if part == '':
+                    continue
+
                 # Check if the current part already exists as a child of the current item
                 child_item = None
                 for i in range(current_item.childCount()):
@@ -401,9 +412,13 @@ class AnalysisWindow(QWidget):
             result = editor.exec_()
 
             if result == QDialog.Accepted:
-                dataframe_to_table_widget(table, df, ANALYSIS_SHOW_COLUMNS, [])
+                self.on_database_updated()
                 self.update_tag_path_tree()
-                self.save_database()
+                dataframe_to_table_widget(table, df, ANALYSIS_SHOW_COLUMNS, [])
+
+    def on_database_updated(self):
+        self.tag_database = self.tag_database.reindex().fillna('')
+        self.save_database()
 
     def save_database(self):
         save_tag_data(self.tag_database)
