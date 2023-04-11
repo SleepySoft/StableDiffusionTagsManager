@@ -24,7 +24,37 @@ declare a COLUMNS as ordered dict with all strings: Tag: tag, Group: path, Value
 a function for dataframe to QTableWidget, with 4 parameters: QTableWidget, dataframe, field_mapping as ordered dict, extra_fields as string list. Clear the table, and rebuild the columns by field_mapping keys + extra_fields. Fill dataframe data into the table and leaving the extra_fields columns empty.
 
 
+add a tree control between self.positive_table and self.negative_table with weight 1
+
+
+set both table multiple selection, not editable, dragable.
+
+
+write a draggable tree to accept drag data from table. override the dropEvent.
+
+
+write code to handle tables item been dragged to the tree.
+
+
 add a member function named on_button_edit, with 2 parameters: QTableWidget, edit_row as int. Get data from the table and update to self.tag_database, follow the mapping of COL2FIELD, which index to table column and the value on index as the field of dataframe. The first column value is the unique major key to the dataframe. If the key does not exists, add a new row to dataframe.
 
 
-add a member function named update_positive_table. Filter 
+positive_tags, negative_tags are list of string. create 2 dataframe for each and put the list data into a row named 'tag'
+
+
+join positive_df with tag_database by 'tag' row. keep all tag_database columns. if the tag not in tag_database, the columns are empty string. the same to negative_df.
+
+
+
+
+
+add a dataframe row edit dialog. 
+it accepts 4 parameters in its __init__: a dataframe, a field_name_mapping as dict, a unique_field as str, unique_field_value as any.
+it has a editable table that has 2 columns: Field, Value and 2 buttons named OK and Cancel. 
+use the unique_field and unique_field_value to filter row. if row is empty. create a new dataframe with the same column. set its unique_field as unique_field_value, other fields data are empty string . create a ordered dict from the row data. show this dict to table, which first column shows the key name that mapping from field_name_mapping. the second column shows the dict value.
+when user click OK. read data from table and update to dataframe row by unique_field and unique_field_value. if data not exits, append a new row to dataframe.
+
+
+
+
+

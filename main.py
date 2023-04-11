@@ -5,9 +5,10 @@ from collections import OrderedDict
 from PyQt5.QtCore import Qt, QDataStream
 from PyQt5.QtCore import QMimeData
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QPlainTextEdit, \
-    QGroupBox, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QAbstractItemView
+    QGroupBox, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QAbstractItemView, QDialog, QPushButton, \
+    QDialogButtonBox
 
-FIELDS = ['tag', 'stance', 'path', 'value', 'label', 'translate_cn', 'comments', 'weight', 'statistics']
+DATABASE_FIELDS = ['tag', 'stance', 'path', 'value', 'label', 'translate_cn', 'comments', 'weight', 'statistics']
 
 ANALYSIS_COLUMNS = OrderedDict([
     ('Tag', 'tag'),
@@ -38,9 +39,9 @@ def load_tag_data():
     df_tags = pd.merge(df_public, df_private, on='tag', how='outer')
 
     # Check if any of the required fields are missing in df_tags
-    if not set(FIELDS).issubset(df_tags.columns):
+    if not set(DATABASE_FIELDS).issubset(df_tags.columns):
         # Add the missing fields to df_tags
-        df_tags = df_tags.reindex(columns=FIELDS)
+        df_tags = df_tags.reindex(columns=DATABASE_FIELDS)
 
     # Replace NaN or null values with empty strings
     df_tags = df_tags.fillna('')
@@ -100,6 +101,156 @@ def dataframe_to_table_widget(
             table_widget.setItem(row, col, item)
 
 
+class DataFrameRowEditDialog(QDialog):
+    def __init__(self, df: pd.DataFrame, field_name_mapping: dict, unique_field: str, unique_field_value: any):
+        super().__init__()
+
+        self.__database = df
+        self.__unique_field = unique_field
+        self.__unique_field_value = unique_field_value
+
+        # Filter the dataframe by the unique field name and value
+        filtered_df = df[df[unique_field] == unique_field_value]
+
+        # If the filtered dataframe is empty, create a new row with the unique field value and empty fields
+        if len(filtered_df) == 0:
+            # Create a new dataframe with the same columns as df
+            new_df = pd.DataFrame(columns=df.columns)
+            # Add a new row with the unique field value and empty fields
+            new_row = {}
+            for col in new_df.columns:
+                if col != unique_field:
+                    new_row[col] = ''
+            new_row[unique_field] = unique_field_value
+            new_df = new_df.append(new_row, ignore_index=True)
+            filtered_df = new_df
+
+        # Get the first row of the filtered dataframe
+        row = filtered_df.iloc[0]
+
+        # Create the editable table widget
+        self.table_widget = QTableWidget(len(row), 2, parent=self)
+
+        # Set the horizontal header labels for the table
+        header_labels = ['Field', 'Value']
+        self.table_widget.setHorizontalHeaderLabels(header_labels)
+
+        # Fill the table with data from the row
+        for row_idx, (field, value) in enumerate(row.items()):
+            if field in field_name_mapping:
+                display_name = field_name_mapping[field]
+            else:
+                display_name = field
+            item = QTableWidgetItem(display_name)
+            item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+            item.setData(0, field)
+            self.table_widget.setItem(row_idx, 0, item)
+
+            item = QTableWidgetItem(str(value))
+            if field == unique_field:
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+            self.table_widget.setItem(row_idx, 1, item)
+
+        # Create the OK and Cancel buttons
+        ok_button = QPushButton('OK', parent=self)
+        cancel_button = QPushButton('Cancel', parent=self)
+
+        # Create the button box and add the buttons
+        button_box = QDialogButtonBox(Qt.Horizontal, parent=self)
+        button_box.addButton(ok_button, QDialogButtonBox.AcceptRole)
+        button_box.addButton(cancel_button, QDialogButtonBox.RejectRole)
+
+        # Create the main layout and add the table widget and button box
+        main_layout = QVBoxLayout(self)
+        main_layout.addWidget(self.table_widget)
+        main_layout.addWidget(button_box)
+
+        # Set the dialog size
+        self.resize(400, 600)
+        # Set the title of the dialog to 'Editor'
+        self.setWindowTitle('Editor')
+        # Set the dialog to be resizable
+        self.setWindowFlags(self.windowFlags() | Qt.WindowMaximizeButtonHint | Qt.WindowMinimizeButtonHint)
+
+        # Connect the OK and Cancel buttons to their respective slots
+        ok_button.clicked.connect(self.accept)
+        cancel_button.clicked.connect(self.reject)
+
+    def accept(self):
+        # Get the data from the table
+        data = {}
+        df = self.__database
+        for row_idx in range(self.table_widget.rowCount()):
+            field_item = self.table_widget.item(row_idx, 0)
+            value_item = self.table_widget.item(row_idx, 1)
+            field_name = field_item.data(0)
+            if field_item and value_item:
+                data[field_name] = value_item.text().strip()
+
+        if (df[self.__unique_field] == self.__unique_field_value).any():
+            df.loc[df[self.__unique_field] == self.__unique_field_value] = data
+        else:
+            df.loc[len(df)] = data
+            
+        # Call the base accept method to close the dialog
+        super().accept()
+
+
+# class DataFrameRowEditDialog(QDialog):
+#     def __init__(self, dataframe: pd.DataFrame, field_mapping: dict, unique_field_name: str, unique_field_value: str):
+#         super().__init__()
+#         # Filter the dataframe by the unique field name and value
+#         filtered_df = dataframe[dataframe[unique_field_name] == unique_field_value]
+#         # Get the first row of the filtered dataframe
+#         row = filtered_df.iloc[0]
+#         # Create the editable table widget
+#         self.table_widget = QTableWidget(2, 2, parent=self)
+#         # Set the horizontal header labels for the table
+#         header_labels = ['Field', 'Value']
+#         self.table_widget.setHorizontalHeaderLabels(header_labels)
+#         # Fill the table with data from the row
+#         for col, field in enumerate(header_labels):
+#             item = QTableWidgetItem(field)
+#             item.setFlags(Qt.ItemIsEnabled)
+#             self.table_widget.setItem(0, col, item)
+#             if field in field_mapping:
+#                 display_name = field_mapping[field]
+#             else:
+#                 display_name = field
+#             item = QTableWidgetItem(str(row[field]))
+#             self.table_widget.setItem(1, col, item)
+#         # Create the OK and Cancel buttons
+#         ok_button = QPushButton('OK', parent=self)
+#         cancel_button = QPushButton('Cancel', parent=self)
+#         # Create the button box and add the buttons
+#         button_box = QDialogButtonBox(Qt.Horizontal, parent=self)
+#         button_box.addButton(ok_button, QDialogButtonBox.AcceptRole)
+#         button_box.addButton(cancel_button, QDialogButtonBox.RejectRole)
+#         # Create the main layout and add the table widget and button box
+#         main_layout = QVBoxLayout(self)
+#         main_layout.addWidget(self.table_widget)
+#         main_layout.addWidget(button_box)
+#         # Set the dialog size
+#         self.resize(400, 200)
+#         # Connect the OK and Cancel buttons to the accept and reject slots
+#         ok_button.clicked.connect(self.accept)
+#         cancel_button.clicked.connect(self.reject)
+
+#     def accept(self):
+#         # Get the data from the table and update the row in the dataframe
+#         field_column = 0
+#         value_column = 1
+#         for row in range(self.table_widget.rowCount()):
+#             field_item = self.table_widget.item(row, field_column)
+#             value_item = self.table_widget.item(row, value_column)
+#             field = field_item.text()
+#             value = value_item.text()
+#             self.parent().row[field] = value
+#         # Call the parent's accept method
+#         super().accept()
+
+
+
 class DraggableTree(QTreeWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -125,7 +276,7 @@ class DraggableTree(QTreeWidget):
 class AnalysisWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.tag_database = pd.DataFrame(columns=['tag'])
+        self.tag_database = pd.DataFrame(columns=DATABASE_FIELDS)
         # Create the root layout
         root_layout = QVBoxLayout(self)
         root_layout.setStretch(0, 2)
@@ -200,6 +351,11 @@ class AnalysisWindow(QWidget):
         self.negative_table.setDragEnabled(True)
         self.negative_table.setDefaultDropAction(Qt.MoveAction)
 
+        # Connect the on_positive_table_double_click function to the cellDoubleClicked signal of self.positive_table
+        self.positive_table.cellDoubleClicked.connect(self.on_positive_table_double_click)
+
+        # Connect the on_negative_table_double_click function to the cellDoubleClicked signal of self.negative_table
+        self.negative_table.cellDoubleClicked.connect(self.on_negative_table_double_click)
         # Test
         # Loop through 10 times to add 10 items to the tree under its root
         for i in range(10):
@@ -213,33 +369,70 @@ class AnalysisWindow(QWidget):
         # Call parse_tags with the input of self.text_edit
         positive_tags, negative_tags, extra_data = parse_tags(self.text_edit.toPlainText())
 
-        # Clear the positive table by deleting all rows
-        self.positive_table.setRowCount(0)
+        # Create a pandas dataframe for the positive tags
+        positive_df = pd.DataFrame({'tag': positive_tags})
 
-        # Clear the negative table by deleting all rows
-        self.negative_table.setRowCount(0)
+        # Create a pandas dataframe for the negative tags
+        negative_df = pd.DataFrame({'tag': negative_tags})
 
-        # Get the current number of rows in the positive table
-        num_rows = self.positive_table.rowCount()
-        # Loop through each positive tag and add it to the positive table
-        for tag in positive_tags:
-            # Create a new row in the positive table
-            self.positive_table.insertRow(num_rows)
-            # Set the tag name in the first column
-            self.positive_table.setItem(num_rows, 0, QTableWidgetItem(tag))
-            # Increment the row counter
-            num_rows += 1
+        # Join positive_df with tag_database by 'tag' row. Keep all tag_database columns.
+        # If the tag not in tag_database, the columns are empty string. The same to negative_df.
+        if positive_df.empty:
+            positive_df = pd.DataFrame(columns=DATABASE_FIELDS)
+        else:
+            positive_df = positive_df.merge(self.tag_database, on='tag', how='left').fillna('')
 
-        # Get the current number of rows in the negative table
-        num_rows = self.negative_table.rowCount()
-        # Loop through each negative tag and add it to the negative table
-        for tag in negative_tags:
-            # Create a new row in the negative table
-            self.negative_table.insertRow(num_rows)
-            # Set the tag name in the first column
-            self.negative_table.setItem(num_rows, 0, QTableWidgetItem(tag))
-            # Increment the row counter
-            num_rows += 1
+        if negative_df.empty:
+            negative_df = pd.DataFrame(columns=DATABASE_FIELDS)
+        else:
+            negative_df = negative_df.merge(self.tag_database, on='tag', how='left').fillna('')
+
+        dataframe_to_table_widget(self.positive_table, positive_df, ANALYSIS_COLUMNS, [])
+        dataframe_to_table_widget(self.negative_table, negative_df, ANALYSIS_COLUMNS, [])
+
+        # # Clear the positive table by deleting all rows
+        # self.positive_table.setRowCount(0)
+        #
+        # # Clear the negative table by deleting all rows
+        # self.negative_table.setRowCount(0)
+        #
+        # # Get the current number of rows in the positive table
+        # num_rows = self.positive_table.rowCount()
+        # # Loop through each positive tag and add it to the positive table
+        # for tag in positive_tags:
+        #     # Create a new row in the positive table
+        #     self.positive_table.insertRow(num_rows)
+        #     # Set the tag name in the first column
+        #     self.positive_table.setItem(num_rows, 0, QTableWidgetItem(tag))
+        #     # Increment the row counter
+        #     num_rows += 1
+        #
+        # # Get the current number of rows in the negative table
+        # num_rows = self.negative_table.rowCount()
+        # # Loop through each negative tag and add it to the negative table
+        # for tag in negative_tags:
+        #     # Create a new row in the negative table
+        #     self.negative_table.insertRow(num_rows)
+        #     # Set the tag name in the first column
+        #     self.negative_table.setItem(num_rows, 0, QTableWidgetItem(tag))
+        #     # Increment the row counter
+        #     num_rows += 1
+
+    # Define a function to be called when a cell in the positive table is double clicked
+    def on_positive_table_double_click(self, row, column):
+        # Get the tag from the selected row
+        item = self.positive_table.item(row, 0)
+        if item is not None:
+            tag = item.text()
+            editor = DataFrameRowEditDialog(self.tag_database, {}, 'tag', tag)
+            editor.exec_()
+
+    # Define a function to be called when a cell in the negative table is double clicked
+    def on_negative_table_double_click(self, row, column):
+        # Get the tag from the selected row
+        tag = self.negative_table.item(row, 0).text()
+        editor = DataFrameRowEditDialog(self.tag_database, {}, 'tag', tag)
+        editor.exec_()
 
 
 class MainWindow(QMainWindow):
