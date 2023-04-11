@@ -18,7 +18,7 @@ DATABASE_SUPPORT_FIELD = OrderedDict([
     ('comments', '备注'),
     ('weight', '默认权重'),
     ('label', '收藏夹'),
-    ('stance', '私有（Y/N）'),
+    ('private', '私有（Y/N）'),
     ('statistics', '统计')
 ])
 
@@ -45,7 +45,7 @@ def load_tag_data():
         df_private = pd.DataFrame(columns=['tag'])
 
     # Join df_public and df_private by field "tag" to create df_tags
-    df_tags = pd.merge(df_public, df_private, on='tag', how='outer')
+    df_tags = pd.concat([df_public, df_private])
 
     # Check if any of the required fields are missing in df_tags
     if not set(DATABASE_FIELDS).issubset(df_tags.columns):
@@ -57,6 +57,16 @@ def load_tag_data():
 
     # Return the resulting DataFrame
     return df_tags
+
+
+def save_tag_data(df: pd.DataFrame):
+    # Split the dataframe into two based on the value of the 'private' field
+    df_private = df[df['private'] == 'Y']
+    df_public = df[df['private'] != 'Y']
+
+    # Save the private and public dataframes to separate CSV files
+    df_private.to_csv('private.csv', index=False)
+    df_public.to_csv('public.csv', index=False)
 
 
 def parse_tags(prompt_text: str):
@@ -237,7 +247,7 @@ class AnalysisWindow(QWidget):
         self.positive_df = pd.DataFrame(columns=DATABASE_FIELDS)
         self.negative_df = pd.DataFrame(columns=DATABASE_FIELDS)
 
-        self.tag_database = pd.DataFrame(columns=DATABASE_FIELDS)
+        self.tag_database = load_tag_data()
 
         # Create the root layout
         root_layout = QVBoxLayout(self)
@@ -323,63 +333,32 @@ class AnalysisWindow(QWidget):
 
         self.update_tag_path_tree()
 
-        # # Test
-        # # Loop through 10 times to add 10 items to the tree under its root
-        # for i in range(10):
-        #     # Create a new item with the text "Item {i+1}"
-        #     new_item = QTreeWidgetItem(["Item {}".format(i+1)])
-        #     # Add the new item to the tree under its root
-        #     self.tree.addTopLevelItem(new_item)
-
     # Define a function to be called when the text in self.text_edit changes
     def on_prompt_edit(self):
         # Call parse_tags with the input of self.text_edit
         self.positive_tags, self.negative_tags, self.extra_data = parse_tags(self.text_edit.toPlainText())
 
-        # Create a pandas dataframe for the positive tags
-        self.positive_df = pd.DataFrame({'tag': self.positive_tags})
-
-        # Create a pandas dataframe for the negative tags
-        self.negative_df = pd.DataFrame({'tag': self.negative_tags})
-
         # Join positive_df with tag_database by 'tag' row. Keep all tag_database columns.
         # If the tag not in tag_database, the columns are empty string. The same to negative_df.
-        if self.positive_df.empty:
-            self.positive_df = pd.DataFrame(columns=DATABASE_FIELDS)
-        else:
+        if not self.tag_database.empty:
+            self.positive_df = pd.DataFrame({'tag': self.positive_tags})
+            self.negative_df = pd.DataFrame({'tag': self.negative_tags})
             self.positive_df = self.positive_df.merge(self.tag_database, on='tag', how='left').fillna('')
-
-        if self.negative_df.empty:
-            self.negative_df = pd.DataFrame(columns=DATABASE_FIELDS)
-        else:
             self.negative_df = self.negative_df.merge(self.tag_database, on='tag', how='left').fillna('')
+        else:
+            self.positive_df = pd.DataFrame({'tag': self.positive_tags}, columns=DATABASE_FIELDS)
+            self.negative_df = pd.DataFrame({'tag': self.negative_tags}, columns=DATABASE_FIELDS)
 
         dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [])
         dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [])
 
     # Define a function to be called when a cell in the positive table is double clicked
     def on_positive_table_double_click(self, row, column):
-        # Get the tag from the selected row
-        item = self.positive_table.item(row, 0)
-        if item is not None:
-            tag = item.text()
-            editor = DataFrameRowEditDialog(self.tag_database, DATABASE_SUPPORT_FIELD, 'tag', tag)
-            result = editor.exec_()
-
-            if result == QDialog.Accepted:
-                dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [])
-                self.update_tag_path_tree()
+        self.do_edit_item(self.positive_table, row, self.positive_df)
 
     # Define a function to be called when a cell in the negative table is double clicked
     def on_negative_table_double_click(self, row, column):
-        # Get the tag from the selected row
-        tag = self.negative_table.item(row, 0).text()
-        editor = DataFrameRowEditDialog(self.tag_database, DATABASE_SUPPORT_FIELD, 'tag', tag)
-        result = editor.exec_()
-
-        if result == QDialog.Accepted:
-            dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [])
-            self.update_tag_path_tree()
+        self.do_edit_item(self.negative_table, row, self.negative_df)
 
     def update_tag_path_tree(self):
         # Clear the tree
@@ -413,7 +392,21 @@ class AnalysisWindow(QWidget):
                 # Set the current item to be the child item for the next iteration of the loop
                 current_item = child_item
 
+    def do_edit_item(self, table: QTableWidget, row, df):
+        item = self.positive_table.item(row, 0)
+        if item is not None:
+            # Get the tag from the selected row
+            tag = table.item(row, 0).text()
+            editor = DataFrameRowEditDialog(self.tag_database, DATABASE_SUPPORT_FIELD, 'tag', tag)
+            result = editor.exec_()
 
+            if result == QDialog.Accepted:
+                dataframe_to_table_widget(table, df, ANALYSIS_SHOW_COLUMNS, [])
+                self.update_tag_path_tree()
+                self.save_database()
+
+    def save_database(self):
+        save_tag_data(self.tag_database)
 
 
 class MainWindow(QMainWindow):

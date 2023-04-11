@@ -63,3 +63,8 @@ database is a dataframe , check if unique_field has unique_field_value in databa
 get 'path' field data from self.tag_database unique and update them to self.tree as QTreeWidget. the slash in path show the tree hierarchy.
 
 
+write a function named save_tag_data. acceapt a dataframe. Split the dataframe to 2 : if private field == 'Y', to df_private, else to df_public. save df_private to private.csv and save df_public to public.csv
+
+
+
+
