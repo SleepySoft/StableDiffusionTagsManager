@@ -55,6 +55,11 @@ use the unique_field and unique_field_value to filter row. if row is empty. crea
 when user click OK. read data from table and update to dataframe row by unique_field and unique_field_value. if data not exits, append a new row to dataframe.
 
 
+create a new_df dataframe with the same columns of df. add a new row and set unique_field value as unique_field_value. other fileds are empty string.
 
+
+database is a dataframe , check if unique_field has unique_field_value in database
+
+get 'path' field data from self.tag_database unique and update them to self.tree as QTreeWidget. the slash in path show the tree hierarchy.
 
 

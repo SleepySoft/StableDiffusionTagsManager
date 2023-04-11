@@ -105,9 +105,9 @@ class DataFrameRowEditDialog(QDialog):
     def __init__(self, df: pd.DataFrame, field_name_mapping: dict, unique_field: str, unique_field_value: any):
         super().__init__()
 
-        self.__database = df
-        self.__unique_field = unique_field
-        self.__unique_field_value = unique_field_value
+        self.database = df
+        self.unique_field = unique_field
+        self.unique_field_value = unique_field_value
 
         # Filter the dataframe by the unique field name and value
         filtered_df = df[df[unique_field] == unique_field_value]
@@ -179,7 +179,7 @@ class DataFrameRowEditDialog(QDialog):
     def accept(self):
         # Get the data from the table
         data = {}
-        df = self.__database
+        df = self.database
         for row_idx in range(self.table_widget.rowCount()):
             field_item = self.table_widget.item(row_idx, 0)
             value_item = self.table_widget.item(row_idx, 1)
@@ -187,68 +187,13 @@ class DataFrameRowEditDialog(QDialog):
             if field_item and value_item:
                 data[field_name] = value_item.text().strip()
 
-        if (df[self.__unique_field] == self.__unique_field_value).any():
-            df.loc[df[self.__unique_field] == self.__unique_field_value] = data
+        if (df[self.unique_field] == self.unique_field_value).any():
+            df.loc[df[self.unique_field] == self.unique_field_value] = data
         else:
             df.loc[len(df)] = data
-            
+
         # Call the base accept method to close the dialog
         super().accept()
-
-
-# class DataFrameRowEditDialog(QDialog):
-#     def __init__(self, dataframe: pd.DataFrame, field_mapping: dict, unique_field_name: str, unique_field_value: str):
-#         super().__init__()
-#         # Filter the dataframe by the unique field name and value
-#         filtered_df = dataframe[dataframe[unique_field_name] == unique_field_value]
-#         # Get the first row of the filtered dataframe
-#         row = filtered_df.iloc[0]
-#         # Create the editable table widget
-#         self.table_widget = QTableWidget(2, 2, parent=self)
-#         # Set the horizontal header labels for the table
-#         header_labels = ['Field', 'Value']
-#         self.table_widget.setHorizontalHeaderLabels(header_labels)
-#         # Fill the table with data from the row
-#         for col, field in enumerate(header_labels):
-#             item = QTableWidgetItem(field)
-#             item.setFlags(Qt.ItemIsEnabled)
-#             self.table_widget.setItem(0, col, item)
-#             if field in field_mapping:
-#                 display_name = field_mapping[field]
-#             else:
-#                 display_name = field
-#             item = QTableWidgetItem(str(row[field]))
-#             self.table_widget.setItem(1, col, item)
-#         # Create the OK and Cancel buttons
-#         ok_button = QPushButton('OK', parent=self)
-#         cancel_button = QPushButton('Cancel', parent=self)
-#         # Create the button box and add the buttons
-#         button_box = QDialogButtonBox(Qt.Horizontal, parent=self)
-#         button_box.addButton(ok_button, QDialogButtonBox.AcceptRole)
-#         button_box.addButton(cancel_button, QDialogButtonBox.RejectRole)
-#         # Create the main layout and add the table widget and button box
-#         main_layout = QVBoxLayout(self)
-#         main_layout.addWidget(self.table_widget)
-#         main_layout.addWidget(button_box)
-#         # Set the dialog size
-#         self.resize(400, 200)
-#         # Connect the OK and Cancel buttons to the accept and reject slots
-#         ok_button.clicked.connect(self.accept)
-#         cancel_button.clicked.connect(self.reject)
-
-#     def accept(self):
-#         # Get the data from the table and update the row in the dataframe
-#         field_column = 0
-#         value_column = 1
-#         for row in range(self.table_widget.rowCount()):
-#             field_item = self.table_widget.item(row, field_column)
-#             value_item = self.table_widget.item(row, value_column)
-#             field = field_item.text()
-#             value = value_item.text()
-#             self.parent().row[field] = value
-#         # Call the parent's accept method
-#         super().accept()
-
 
 
 class DraggableTree(QTreeWidget):
@@ -276,11 +221,17 @@ class DraggableTree(QTreeWidget):
 class AnalysisWindow(QWidget):
     def __init__(self):
         super().__init__()
+
+        self.positive_tags = []
+        self.negative_tags = []
+        self.extra_data = ''
+        self.positive_df = pd.DataFrame(columns=DATABASE_FIELDS)
+        self.negative_df = pd.DataFrame(columns=DATABASE_FIELDS)
+
         self.tag_database = pd.DataFrame(columns=DATABASE_FIELDS)
+
         # Create the root layout
         root_layout = QVBoxLayout(self)
-        root_layout.setStretch(0, 2)
-        root_layout.setStretch(1, 8)
         # Create the top horizontal layout
         top_layout = QHBoxLayout()
         # Add the multiple text edit to the top layout
@@ -316,7 +267,7 @@ class AnalysisWindow(QWidget):
         self.tree_group = QGroupBox("Tree", parent=self)
         # Create the tree widget for the tree group
         self.tree = DraggableTree(parent=self)
-        self.tree.setColumnCount(2)
+        self.tree.setHeaderHidden(True)
         tree_group_layout = QVBoxLayout()
         tree_group_layout.addWidget(self.tree)
         self.tree_group.setLayout(tree_group_layout)
@@ -334,6 +285,10 @@ class AnalysisWindow(QWidget):
         bottom_layout.setStretch(2, 45)
         # Add the bottom layout to the root layout
         root_layout.addLayout(bottom_layout)
+        root_layout.setStretch(0, 2)
+        root_layout.setStretch(1, 8)
+
+        self.resize(1024, 768)
 
         # Connect the on_prompt_edit function to the textChanged signal of self.text_edit
         self.text_edit.textChanged.connect(self.on_prompt_edit)
@@ -356,67 +311,42 @@ class AnalysisWindow(QWidget):
 
         # Connect the on_negative_table_double_click function to the cellDoubleClicked signal of self.negative_table
         self.negative_table.cellDoubleClicked.connect(self.on_negative_table_double_click)
-        # Test
-        # Loop through 10 times to add 10 items to the tree under its root
-        for i in range(10):
-            # Create a new item with the text "Item {i+1}"
-            new_item = QTreeWidgetItem(["Item {}".format(i+1)])
-            # Add the new item to the tree under its root
-            self.tree.addTopLevelItem(new_item)
+
+        self.update_tag_path_tree()
+
+        # # Test
+        # # Loop through 10 times to add 10 items to the tree under its root
+        # for i in range(10):
+        #     # Create a new item with the text "Item {i+1}"
+        #     new_item = QTreeWidgetItem(["Item {}".format(i+1)])
+        #     # Add the new item to the tree under its root
+        #     self.tree.addTopLevelItem(new_item)
 
     # Define a function to be called when the text in self.text_edit changes
     def on_prompt_edit(self):
         # Call parse_tags with the input of self.text_edit
-        positive_tags, negative_tags, extra_data = parse_tags(self.text_edit.toPlainText())
+        self.positive_tags, self.negative_tags, self.extra_data = parse_tags(self.text_edit.toPlainText())
 
         # Create a pandas dataframe for the positive tags
-        positive_df = pd.DataFrame({'tag': positive_tags})
+        self.positive_df = pd.DataFrame({'tag': self.positive_tags})
 
         # Create a pandas dataframe for the negative tags
-        negative_df = pd.DataFrame({'tag': negative_tags})
+        self.negative_df = pd.DataFrame({'tag': self.negative_tags})
 
         # Join positive_df with tag_database by 'tag' row. Keep all tag_database columns.
         # If the tag not in tag_database, the columns are empty string. The same to negative_df.
-        if positive_df.empty:
-            positive_df = pd.DataFrame(columns=DATABASE_FIELDS)
+        if self.positive_df.empty:
+            self.positive_df = pd.DataFrame(columns=DATABASE_FIELDS)
         else:
-            positive_df = positive_df.merge(self.tag_database, on='tag', how='left').fillna('')
+            self.positive_df = self.positive_df.merge(self.tag_database, on='tag', how='left').fillna('')
 
-        if negative_df.empty:
-            negative_df = pd.DataFrame(columns=DATABASE_FIELDS)
+        if self.negative_df.empty:
+            self.negative_df = pd.DataFrame(columns=DATABASE_FIELDS)
         else:
-            negative_df = negative_df.merge(self.tag_database, on='tag', how='left').fillna('')
+            self.negative_df = self.negative_df.merge(self.tag_database, on='tag', how='left').fillna('')
 
-        dataframe_to_table_widget(self.positive_table, positive_df, ANALYSIS_COLUMNS, [])
-        dataframe_to_table_widget(self.negative_table, negative_df, ANALYSIS_COLUMNS, [])
-
-        # # Clear the positive table by deleting all rows
-        # self.positive_table.setRowCount(0)
-        #
-        # # Clear the negative table by deleting all rows
-        # self.negative_table.setRowCount(0)
-        #
-        # # Get the current number of rows in the positive table
-        # num_rows = self.positive_table.rowCount()
-        # # Loop through each positive tag and add it to the positive table
-        # for tag in positive_tags:
-        #     # Create a new row in the positive table
-        #     self.positive_table.insertRow(num_rows)
-        #     # Set the tag name in the first column
-        #     self.positive_table.setItem(num_rows, 0, QTableWidgetItem(tag))
-        #     # Increment the row counter
-        #     num_rows += 1
-        #
-        # # Get the current number of rows in the negative table
-        # num_rows = self.negative_table.rowCount()
-        # # Loop through each negative tag and add it to the negative table
-        # for tag in negative_tags:
-        #     # Create a new row in the negative table
-        #     self.negative_table.insertRow(num_rows)
-        #     # Set the tag name in the first column
-        #     self.negative_table.setItem(num_rows, 0, QTableWidgetItem(tag))
-        #     # Increment the row counter
-        #     num_rows += 1
+        dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_COLUMNS, [])
+        dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_COLUMNS, [])
 
     # Define a function to be called when a cell in the positive table is double clicked
     def on_positive_table_double_click(self, row, column):
@@ -425,7 +355,12 @@ class AnalysisWindow(QWidget):
         if item is not None:
             tag = item.text()
             editor = DataFrameRowEditDialog(self.tag_database, {}, 'tag', tag)
-            editor.exec_()
+            result = editor.exec_()
+
+            if result == QDialog.Accepted:
+                dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_COLUMNS, [])
+                dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_COLUMNS, [])
+                self.update_tag_path_tree()
 
     # Define a function to be called when a cell in the negative table is double clicked
     def on_negative_table_double_click(self, row, column):
@@ -433,6 +368,40 @@ class AnalysisWindow(QWidget):
         tag = self.negative_table.item(row, 0).text()
         editor = DataFrameRowEditDialog(self.tag_database, {}, 'tag', tag)
         editor.exec_()
+
+    def update_tag_path_tree(self):
+        # Clear the tree
+        self.tree.clear()
+
+        # Get unique path values from tag_database
+        unique_paths = self.tag_database['path'].unique()
+
+        # Loop through each unique path
+        for path in unique_paths:
+            # Split the path into its individual parts
+            parts = path.split('/')
+
+            # Start at the root of the tree
+            current_item = self.tree.invisibleRootItem()
+
+            # Loop through each part of the path
+            for part in parts:
+                # Check if the current part already exists as a child of the current item
+                child_item = None
+                for i in range(current_item.childCount()):
+                    if current_item.child(i).text(0) == part:
+                        child_item = current_item.child(i)
+                        break
+
+                # If the current part does not exist as a child of the current item, create a new item for it
+                if child_item is None:
+                    child_item = QTreeWidgetItem([part])
+                    current_item.addChild(child_item)
+
+                # Set the current item to be the child item for the next iteration of the loop
+                current_item = child_item
+
+
 
 
 class MainWindow(QMainWindow):
