@@ -66,5 +66,16 @@ get 'path' field data from self.tag_database unique and update them to self.tree
 write a function named save_tag_data. acceapt a dataframe. Split the dataframe to 2 : if private field == 'Y', to df_private, else to df_public. save df_private to private.csv and save df_public to public.csv
 
 
+receive the data from table here, it might be multiple rows. get each row's first data.
+
+
+write a table widget. override mimeData to set the mine data as the selected rows first column data.
+
+
+in dropEvent(), get the tree node it droped on. caclulate the full path from root to current node. slash as the seperator
+
+
+
+update dataframe self.database set the field 'path' as full_path where field 'tag' in list selected_data.
 
 

@@ -219,9 +219,10 @@ class DataFrameRowEditDialog(QDialog):
 
 
 class DraggableTree(QTreeWidget):
-    def __init__(self, database: pd.DataFrame, parent=None):
+    def __init__(self, database: pd.DataFrame, on_database_update, parent=None):
         super().__init__(parent)
         self.database = database
+        self.on_database_update = on_database_update
         self.setAcceptDrops(True)
         self.setDragEnabled(True)
         self.setDragDropMode(QAbstractItemView.DragDrop)
@@ -256,29 +257,24 @@ class DraggableTree(QTreeWidget):
             # Get the data as bytes and convert to string
             data = bytes(mime_data.data('text/plain')).decode()
             # Convert the string back to a list
-            selected_data = eval(data)
-            # Create a new row in the table for each selected item
-            for item in selected_data:
-                print(item)
+            selected_data = [tag.strip() for tag in eval(data) if len(tag.strip()) > 0]
 
-        # if event.source() == self:
-        #     super().dropEvent(event)
-        # else:
-        #     data = event.mimeData()
-        #     if data.hasFormat('application/x-qabstractitemmodeldatalist'):
-        #         ba = data.data('application/x-qabstractitemmodeldatalist')
-        #         ds = QDataStream(ba)
-        #         tag = ''
-        #         while not ds.atEnd():
-        #             # row = ds.readInt32()
-        #             # column = ds.readInt32()
-        #             map_items = ds.readQVariantMap()
-        #             print(map_items)
-        #             # Assume the first item is tag
-        #             # if len(map_items) > 0:
-        #             #     tag = map_items.values()[0]
-        #             # break
-        #         print(tag)
+            if len(selected_data) > 0:
+                # Get the tree node it dropped on
+                current_item = self.itemAt(event.pos())
+                # Calculate the full path from root to current node
+                path = []
+                while current_item is not None:
+                    path.insert(0, current_item.text(0))
+                    current_item = current_item.parent()
+                full_path = '/'.join(path)
+
+                self.update_tags_path(self.database, selected_data, full_path)
+                self.on_database_update()
+
+    def update_tags_path(self, df: pd.DataFrame, tags: [str], _path: str):
+        # If the tags are new?
+        self.database.loc[self.database['tag'].isin(tags), 'path'] = _path
 
 
 class CustomTableWidget(QTableWidget):
@@ -348,7 +344,7 @@ class AnalysisWindow(QWidget):
         # Create the tree widget for the tree group
         self.tree_group = QGroupBox("Tree", parent=self)
         # Create the tree widget for the tree group
-        self.tree = DraggableTree(self.tag_database, parent=self)
+        self.tree = DraggableTree(self.tag_database, self.on_database_updated, parent=self)
         self.tree.setHeaderHidden(True)
         tree_group_layout = QVBoxLayout()
         tree_group_layout.addWidget(self.tree)
