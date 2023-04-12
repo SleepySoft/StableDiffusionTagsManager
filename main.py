@@ -41,7 +41,7 @@ for f in ANALYSIS_DISPLAY_FIELD:
 ANALYSIS_SHOW_COLUMNS['weight'] = '权重'
 
 PRESET_TAG_PATH = ['正向效果', '反向效果', '中立效果',
-                   '场景/室外', '场景/室内', '场景/幻境',
+                   '场景/室外', '场景/室内', '场景/幻境', '场景/道具',
                    '角色/女性', '角色/男性', '角色/福瑞',
                    '脸部/头发', '脸部/眼睛', '脸部/嘴巴', '脸部/表情',
                    '衣服', '动作', '视角', '绘画风格', '18x']
@@ -321,7 +321,7 @@ class DataFrameRowEditDialog(QDialog):
 
             item = QTableWidgetItem(str(value))
             if field == unique_field:
-                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+                item.setFlags(item.flags() & ~Qt.ItemIsEditable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
             self.table_widget.setItem(row_idx, 1, item)
 
         # Create the OK and Cancel buttons
@@ -438,7 +438,7 @@ class DraggableTree(QTreeWidget):
                 df = df.append(new_row, ignore_index=True)
         return df
         
-    def save_expand_items() -> list:
+    def save_expand_items(self) -> list:
         # Save the expanded state of all items
         expanded_items = []
         for i in range(self.topLevelItemCount()):
@@ -446,7 +446,7 @@ class DraggableTree(QTreeWidget):
             if item.isExpanded():
                 expanded_items.append(item.text(0))
 
-    def restore_expand_items(expanded_items: list):
+    def restore_expand_items(self, expanded_items: list):
         # Restore the expanded state of all items
         for i in range(self.topLevelItemCount()):
             item = self.topLevelItem(i)
