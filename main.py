@@ -24,11 +24,12 @@ DATABASE_SUPPORT_FIELD = OrderedDict([
 
 DATABASE_FIELDS = list(DATABASE_SUPPORT_FIELD.keys())
 
-ANALYSIS_DISPLAY_FIELD = ['tag', 'path', 'value', 'translate_cn', 'comments']
+ANALYSIS_DISPLAY_FIELD = ['tag', 'weight', 'path', 'value', 'translate_cn', 'comments']
 
 ANALYSIS_SHOW_COLUMNS = OrderedDict()
 for f in ANALYSIS_DISPLAY_FIELD:
     ANALYSIS_SHOW_COLUMNS[f] = DATABASE_SUPPORT_FIELD[f]
+ANALYSIS_SHOW_COLUMNS['weight'] = '权重'
 
 PRESET_TAG_PATH = ['通用正向', '通用反向',
                    '场景/室外', '场景/室内', '场景/幻境',
@@ -41,6 +42,21 @@ def unique_list(lst: list or tuple) -> list:
     result = []
     [result.append(item) for item in lst if item not in result]
     return result
+
+
+def format_float(value):
+    try:
+        value = float(value)
+        return f"{value:.2f}"
+    except ValueError:
+        return str(value)
+
+
+def merge_df_keeping_left_value(left: pd.DataFrame, right: pd.DataFrame, on: str):
+    df = left.merge(right, on=on, how='left', suffixes=('', '_y'))
+    df = df.drop([col for col in df.columns if col.endswith('_y')], axis=1)
+    df = df.fillna('')
+    return df
 
 
 def load_tag_data():
@@ -93,14 +109,14 @@ def parse_prompts(prompt_text: str):
             text = text[text.index(':') + 1:]
         return text
 
-    # Split line 0 by ',' and strip each sub string. line 0 is positive_tags, line 1 is negitive_tags.
+    # Split line 0 by ',' and strip each sub string. line 0 is positive_tags, line 1 is negative_tags.
     positive_tags = [tag.strip() for tag in trim_colon(lines[0]).split(',')] if len(lines) > 0 else []
     negative_tags = [tag.strip() for tag in trim_colon(lines[1]).split(',')] if len(lines) > 1 else []
 
     # Join the rest lines by '\n' as extra_data. If no more lines extra_data should be empty string.
     extra_data = '\n'.join(lines[2:]) if len(lines) > 2 else ''
 
-    # Return positive_tags, negitive_tags, extra_data
+    # Return positive_tags, negative_tags, extra_data
     return positive_tags, negative_tags, extra_data
 
 
@@ -118,12 +134,12 @@ def analysis_tag(tag: str):
         else:
             # If the second part is not a number, set the raw_tag to the entire tag and tag_weight to 1
             raw_tag = tag
-            tag_weight = 1
+            tag_weight = 1.0
     # Check if the tag contains "|"
     elif "|" in tag:
         # If the tag contains "|", set the raw_tag to the entire tag and tag_weight to 1
         raw_tag = tag
-        tag_weight = 1
+        tag_weight = 1.0
     else:
         # If the tag does not contain ":" or "|", set the raw_tag to the content after removing all brackets
         raw_tag = re.sub(r'[\(\)\[\]]', '', tag)
@@ -146,8 +162,13 @@ def tags_list_to_tag_data(tags: [str]):
         raw_tag, tag_weight = analysis_tag(tag)
         if len(raw_tag) == 0:
             continue
-        data_tag.append(raw_tag)
-        data_weight.append(str(tag_weight))
+        # Process the duplicate case
+        if raw_tag not in data_tag:
+            data_tag.append(raw_tag)
+            data_weight.append(format_float(tag_weight))
+        else:
+            index = data_tag.index(raw_tag)
+            data_weight[index] = float(data_weight[index]) * float(tag_weight)
     return {
         'tag': data_tag,
         'weight': data_weight
@@ -465,8 +486,8 @@ class AnalysisWindow(QWidget):
         if not self.tag_database.empty:
             self.positive_df = pd.DataFrame(positive_tag_data)
             self.negative_df = pd.DataFrame(negative_tag_data)
-            self.positive_df = self.positive_df.merge(self.tag_database, on='tag', how='left').fillna('')
-            self.negative_df = self.negative_df.merge(self.tag_database, on='tag', how='left').fillna('')
+            self.positive_df = merge_df_keeping_left_value(self.positive_df, self.tag_database, on='tag')
+            self.negative_df = merge_df_keeping_left_value(self.negative_df, self.tag_database, on='tag')
         else:
             self.positive_df = pd.DataFrame(positive_tag_data, columns=DATABASE_FIELDS).fillna('')
             self.negative_df = pd.DataFrame(negative_tag_data, columns=DATABASE_FIELDS).fillna('')
