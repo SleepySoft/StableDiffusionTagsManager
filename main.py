@@ -272,9 +272,6 @@ def dataframe_to_table_widget(
         for col, field in enumerate(field_mapping.keys()):
             item = QTableWidgetItem(str(dataframe.loc[row, field]))
             table_widget.setItem(row, col, item)
-        for col, field in enumerate(extra_headers, start=len(field_mapping)):
-            item = QTableWidgetItem('')
-            table_widget.setItem(row, col, item)
 
 
 class DataFrameRowEditDialog(QDialog):
@@ -427,7 +424,7 @@ class DraggableTree(QTreeWidget):
 
                 df = self.update_tags_path(self.database, selected_data, full_path)
 
-                self.on_operation_done(df)
+                self.on_operation_done(df, refresh_tree=False)
 
     def update_tags_path(self, df: pd.DataFrame, tags: [str], _path: str) -> pd.DataFrame or None:
         # Check if any of the tags already exist in the dataframe
@@ -440,9 +437,21 @@ class DraggableTree(QTreeWidget):
                 # Append the new row to the dataframe
                 df = df.append(new_row, ignore_index=True)
         return df
+        
+    def save_expand_items() -> list:
+        # Save the expanded state of all items
+        expanded_items = []
+        for i in range(self.topLevelItemCount()):
+            item = self.topLevelItem(i)
+            if item.isExpanded():
+                expanded_items.append(item.text(0))
 
-        # If the tags are new?
-        # self.database.loc[self.database['tag'].isin(tags), 'path'] = _path
+    def restore_expand_items(expanded_items: list):
+        # Restore the expanded state of all items
+        for i in range(self.topLevelItemCount()):
+            item = self.topLevelItem(i)
+            if item.text(0) in expanded_items:
+                item.setExpanded(True)
 
 
 class CustomTableWidget(QTableWidget):
@@ -626,14 +635,13 @@ class AnalysisWindow(QWidget):
             result = editor.exec_()
 
             if result == QDialog.Accepted:
-                self.on_database_updated()
-                self.rebuild_analysis_table(True, True, True)
+                self.on_edit_done()
 
     # ---------------------------------------------------------------------------------------------
 
-    def on_edit_done(self, new_df: pd.DataFrame = None, refresh_ui: bool = True):
-        self.on_database_updated(new_df, refresh_ui)
-        self.rebuild_analysis_table(True, True, refresh_ui)
+    def on_edit_done(self, new_df: pd.DataFrame = None, refresh_table: bool = True, refresh_tree: bool = True):
+        self.on_database_updated(new_df, refresh_tree)
+        self.rebuild_analysis_table(True, True, refresh_table)
 
     def on_database_updated(self, new_df: pd.DataFrame = None, refresh_ui: bool = True):
         if new_df is not None:
