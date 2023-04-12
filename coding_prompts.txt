@@ -95,6 +95,8 @@ finish update_tags_path function. df is a dataframe. tag is a string list. if on
 
 write a function named backup_file, accept 2 parameters: file_name as str, backup_limit as int.
 check and build a folder named 'backup' at the same path of file_name. Copy file_name to this folder and add timestamp (YYYYmmDDHHMMSSsss) before its extension if has, else to be its extension.
-After copying file, get the file number from backup folder. If its larger than backup_limit. delete the oldest file, to be judged by the timestamp in file name. not to the file create time.
+After copying file, get the file number that matches this file's backup name from backup folder by using re. If its larger than backup_limit. delete the oldest file, to be judged by the timestamp in file name. not to the file create time.
 
+
+create a readonly multiple line text to replace reserved_area which named text_comments showing ANALYSIS_README
 

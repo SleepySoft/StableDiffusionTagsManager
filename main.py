@@ -15,6 +15,10 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBo
     QGroupBox, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QAbstractItemView, QDialog, QPushButton, \
     QDialogButtonBox
 
+PUBLIC_DATABASE = 'public.csv'
+PRIVATE_DATABASE = 'private.csv'
+BACKUP_LIMIT = 20
+
 DATABASE_SUPPORT_FIELD = OrderedDict([
     ('tag', '标签'),
     ('path', '功能分组'),
@@ -38,8 +42,18 @@ ANALYSIS_SHOW_COLUMNS['weight'] = '权重'
 
 PRESET_TAG_PATH = ['正向效果', '反向效果', '中立效果',
                    '场景/室外', '场景/室内', '场景/幻境',
+                   '角色/女性', '角色/男性', '角色/福瑞',
                    '脸部/头发', '脸部/眼睛', '脸部/嘴巴',
-                   '衣服', '动作', '特效', '视角', '18x']
+                   '衣服', '动作', '视角', '18x']
+
+ANALYSIS_README = """使用说明：
+1. 将tags粘贴到左边的输入框中。第一行为正面tag，第二行为负面tag，忽略空行以及三行之后的附加数据。可以直接粘贴从C站上复制下来的图片参数。
+2. 下方左侧列表显示正面tag分析结果，右侧列表显示负面tag分析结果。如果数据库中有对应tag的数据，则展示更多信息，否则除权重外显示空白。
+   注：仅能分析基本的tag权重，对于特殊tag格式（过渡，LoRA）的分析并不完善。
+3. 下方中间的树形控件显示预置及数据库中已存在的tag分组，将两侧的tag（可以多选）拖到分组结点上可以将tag快速分组并加入数据库。
+4. 双击tag列表可以编辑该tag的详细信息，点击确定后该tag信息会更新到数据库。
+   注：如果不对新tag进行3或4的操作，则这个tag不会放入数据库。建议只把有用的tag加入数据库。你也可以通过excel修改数据库的csv文件。
+"""
 
 
 # Do not use set to keep list order
@@ -60,35 +74,39 @@ def format_float(value):
 def backup_file(file_name: str, backup_limit: int):
     # Get the path of the file
     file_path = os.path.abspath(file_name)
-    
+
     # Get the directory of the file
     file_dir = os.path.dirname(file_path)
-    
+
     # Create the backup directory if it does not exist
     backup_dir = os.path.join(file_dir, 'backup')
     os.makedirs(backup_dir, exist_ok=True)
-    
+
     # Get the timestamp
     timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S_%f')[:-3]
-    
+
     # Get the file extension
     file_ext = os.path.splitext(file_name)[1]
-    
+
     # Create the backup file name
     backup_file_name = os.path.basename(file_name)
     if file_ext:
         backup_file_name = backup_file_name.replace(file_ext, f'_{timestamp}{file_ext}')
     else:
         backup_file_name = f'{backup_file_name}_{timestamp}'
-    
+
     # Copy the file to the backup directory
     backup_file_path = os.path.join(backup_dir, backup_file_name)
     shutil.copy2(file_path, backup_file_path)
-    
+
     # Get the number of backup files
-    backup_files = glob.glob(os.path.join(backup_dir, '*'))
+    if file_ext:
+        backup_files = glob.glob(
+            os.path.join(backup_dir, f'{os.path.basename(file_name).replace(file_ext, "")}_*{file_ext}'))
+    else:
+        backup_files = glob.glob(os.path.join(backup_dir, f'{os.path.basename(file_name)}_*'))
     num_backup_files = len(backup_files)
-    
+
     # If the number of backup files is greater than the backup limit, delete the oldest file
     if num_backup_files > backup_limit:
         oldest_file = min(backup_files, key=os.path.getctime)
@@ -105,13 +123,13 @@ def merge_df_keeping_left_value(left: pd.DataFrame, right: pd.DataFrame, on: str
 def load_tag_data():
     # Load public.csv to df_public if it exists
     try:
-        df_public = pd.read_csv('public.csv')
+        df_public = pd.read_csv(PUBLIC_DATABASE)
     except FileNotFoundError:
         df_public = pd.DataFrame(columns=['tag'])
 
     # Load private.csv to df_private if it exists
     try:
-        df_private = pd.read_csv('private.csv')
+        df_private = pd.read_csv(PRIVATE_DATABASE)
     except FileNotFoundError:
         df_private = pd.DataFrame(columns=['tag'])
 
@@ -170,14 +188,16 @@ def analysis_tag(tag: str):
         tag = tag.strip("()")
         # Split the tag by ":" and check if the second part is a number
         parts = tag.split(":")
-        if parts[1].isdigit():
+        try:
             # If the second part is a number, set the raw_tag and tag_weight accordingly
             raw_tag = parts[0]
-            tag_weight = int(parts[1])
-        else:
+            tag_weight = float(parts[1])
+        except Exception:
             # If the second part is not a number, set the raw_tag to the entire tag and tag_weight to 1
             raw_tag = tag
             tag_weight = 1.0
+        finally:
+            pass
     # Check if the tag contains "|"
     elif "|" in tag:
         # If the tag contains "|", set the raw_tag to the entire tag and tag_weight to 1
@@ -211,7 +231,7 @@ def tags_list_to_tag_data(tags: [str]) -> dict:
             data_weight.append(format_float(tag_weight))
         else:
             index = data_tag.index(raw_tag)
-            data_weight[index] = float(data_weight[index]) * float(tag_weight)
+            data_weight[index] = format_float(float(data_weight[index]) * float(tag_weight))
     return {
         'tag': data_tag,
         'weight': data_weight
@@ -404,7 +424,7 @@ class DraggableTree(QTreeWidget):
                 df.loc[df['tag'] == tag, 'path'] = _path
             else:
                 # Create a new row with the tags and path
-                new_row = pd.DataFrame({'tag': tags, 'path': [_path]*len(tags)})
+                new_row = pd.DataFrame({'tag': tags, 'path': [_path] * len(tags)})
                 # Append the new row to the dataframe
                 df = df.append(new_row, ignore_index=True)
         return df
@@ -451,12 +471,16 @@ class AnalysisWindow(QWidget):
         # Add the multiple text edit to the top layout
         self.text_edit = QPlainTextEdit()
         top_layout.addWidget(self.text_edit, 3)
-        # Add the reserved area to the top layout
-        reserved_area = QWidget()
-        top_layout.addWidget(reserved_area, 7)
-        # Set the space ratio to 70% and 30%
-        top_layout.setStretch(0, 7)
-        top_layout.setStretch(1, 3)
+        
+        # Create the read-only multiple line text for the analysis readme
+        text_comments = QPlainTextEdit()
+        text_comments.setReadOnly(True)
+        text_comments.setPlainText(ANALYSIS_README)
+        top_layout.addWidget(text_comments, 7)
+
+        # Set the space ratio to 55% and 45%
+        top_layout.setStretch(0, 55)
+        top_layout.setStretch(1, 45)
         # Add the top layout to the root layout
         root_layout.addLayout(top_layout)
         # Create the group widget for the positive table
@@ -635,6 +659,8 @@ class AnalysisWindow(QWidget):
                 dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [])
 
     def save_database(self):
+        backup_file(PUBLIC_DATABASE, BACKUP_LIMIT)
+        backup_file(PRIVATE_DATABASE, BACKUP_LIMIT)
         save_tag_data(self.tag_database)
 
 
