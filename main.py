@@ -31,10 +31,10 @@ for f in ANALYSIS_DISPLAY_FIELD:
     ANALYSIS_SHOW_COLUMNS[f] = DATABASE_SUPPORT_FIELD[f]
 ANALYSIS_SHOW_COLUMNS['weight'] = '权重'
 
-PRESET_TAG_PATH = ['通用正向', '通用反向',
+PRESET_TAG_PATH = ['正向效果', '反向效果', '中立效果',
                    '场景/室外', '场景/室内', '场景/幻境',
                    '脸部/头发', '脸部/眼睛', '脸部/嘴巴',
-                   '衣服', '动作', '特效', '18x']
+                   '衣服', '动作', '特效', '视角', '18x']
 
 
 # Do not use set to keep list order
@@ -300,10 +300,10 @@ class DataFrameRowEditDialog(QDialog):
 
 
 class DraggableTree(QTreeWidget):
-    def __init__(self, database: pd.DataFrame, on_database_update, parent=None):
+    def __init__(self, database: pd.DataFrame, on_edit_done, parent=None):
         super().__init__(parent)
         self.database = database
-        self.on_database_update = on_database_update
+        self.on_operation_done = on_edit_done
         self.setAcceptDrops(True)
         self.setDragEnabled(True)
         self.setDragDropMode(QAbstractItemView.DragDrop)
@@ -350,12 +350,26 @@ class DraggableTree(QTreeWidget):
                     current_item = current_item.parent()
                 full_path = '/'.join(path)
 
-                self.update_tags_path(self.database, selected_data, full_path)
-                self.on_database_update()
+                df = self.update_tags_path(self.database, selected_data, full_path)
 
-    def update_tags_path(self, df: pd.DataFrame, tags: [str], _path: str):
+                self.on_operation_done(df)
+
+    def update_tags_path(self, df: pd.DataFrame, tags: [str], _path: str) -> pd.DataFrame or None:
+        # Check if any of the tags already exist in the dataframe
+        existing_tags = df[df['tag'].isin(tags)]
+        if not existing_tags.empty:
+            # Update the path field for the existing tags
+            df.loc[existing_tags.index, 'path'] = _path
+            return None
+        else:
+            # Create a new row with the tags and path
+            new_row = pd.DataFrame({'tag': tags, 'path': [_path]*len(tags)})
+            # Append the new row to the dataframe
+            df = df.append(new_row, ignore_index=True)
+            return df
+
         # If the tags are new?
-        self.database.loc[self.database['tag'].isin(tags), 'path'] = _path
+        # self.database.loc[self.database['tag'].isin(tags), 'path'] = _path
 
 
 class CustomTableWidget(QTableWidget):
@@ -425,7 +439,7 @@ class AnalysisWindow(QWidget):
         # Create the tree widget for the tree group
         self.tree_group = QGroupBox("Tree", parent=self)
         # Create the tree widget for the tree group
-        self.tree = DraggableTree(self.tag_database, self.on_database_updated, parent=self)
+        self.tree = DraggableTree(self.tag_database, self.on_edit_done, parent=self)
         # Create the tree widget for the tree group with one column and the specified name
         self.tree.setHeaderLabels(['Tag分类（Drag & Drop）'])
         self.tree.setColumnCount(1)
@@ -477,23 +491,7 @@ class AnalysisWindow(QWidget):
     def on_prompt_edit(self):
         # Call parse_prompts with the input of self.text_edit
         self.positive_tags, self.negative_tags, self.extra_data = parse_prompts(self.text_edit.toPlainText())
-
-        positive_tag_data = tags_list_to_tag_data(unique_list(self.positive_tags))
-        negative_tag_data = tags_list_to_tag_data(unique_list(self.negative_tags))
-
-        # Join positive_df with tag_database by 'tag' row. Keep all tag_database columns.
-        # If the tag not in tag_database, the columns are empty string. The same to negative_df.
-        if not self.tag_database.empty:
-            self.positive_df = pd.DataFrame(positive_tag_data)
-            self.negative_df = pd.DataFrame(negative_tag_data)
-            self.positive_df = merge_df_keeping_left_value(self.positive_df, self.tag_database, on='tag')
-            self.negative_df = merge_df_keeping_left_value(self.negative_df, self.tag_database, on='tag')
-        else:
-            self.positive_df = pd.DataFrame(positive_tag_data, columns=DATABASE_FIELDS).fillna('')
-            self.negative_df = pd.DataFrame(negative_tag_data, columns=DATABASE_FIELDS).fillna('')
-
-        dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [])
-        dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [])
+        self.rebuild_analysis_table(True, True, True)
 
     # Define a function to be called when a cell in the positive table is double clicked
     def on_positive_table_double_click(self, row, column):
@@ -552,12 +550,47 @@ class AnalysisWindow(QWidget):
 
             if result == QDialog.Accepted:
                 self.on_database_updated()
-                self.update_tag_path_tree()
-                dataframe_to_table_widget(table, df, ANALYSIS_SHOW_COLUMNS, [])
+                self.rebuild_analysis_table(True, True, True)
 
-    def on_database_updated(self):
+    # ---------------------------------------------------------------------------------------------
+
+    def on_edit_done(self, new_df: pd.DataFrame = None, refresh_ui: bool = True):
+        self.on_database_updated(new_df, refresh_ui)
+        self.rebuild_analysis_table(True, True, refresh_ui)
+
+    def on_database_updated(self, new_df: pd.DataFrame = None, refresh_ui: bool = True):
+        if new_df is not None:
+            self.tag_database = new_df
         self.tag_database = self.tag_database.reindex().fillna('')
         self.save_database()
+        if refresh_ui:
+            self.update_tag_path_tree()
+
+    def rebuild_analysis_table(self, positive: bool, negative: bool, refresh_ui: bool = True):
+        # Based on positive_tags and negative_tags
+
+        # Join positive_df with tag_database by 'tag' row. Keep all tag_database columns.
+        # If the tag not in tag_database, the columns are empty string. The same to negative_df.
+
+        if positive:
+            positive_tag_data = tags_list_to_tag_data(unique_list(self.positive_tags))
+            if not self.tag_database.empty:
+                self.positive_df = pd.DataFrame(positive_tag_data)
+                self.positive_df = merge_df_keeping_left_value(self.positive_df, self.tag_database, on='tag')
+            else:
+                self.positive_df = pd.DataFrame(positive_tag_data, columns=DATABASE_FIELDS).fillna('')
+            if refresh_ui:
+                dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [])
+
+        if negative:
+            negative_tag_data = tags_list_to_tag_data(unique_list(self.negative_tags))
+            if not self.tag_database.empty:
+                self.negative_df = pd.DataFrame(negative_tag_data)
+                self.negative_df = merge_df_keeping_left_value(self.negative_df, self.tag_database, on='tag')
+            else:
+                self.negative_df = pd.DataFrame(negative_tag_data, columns=DATABASE_FIELDS).fillna('')
+            if refresh_ui:
+                dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [])
 
     def save_database(self):
         save_tag_data(self.tag_database)
