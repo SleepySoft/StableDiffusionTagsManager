@@ -87,6 +87,14 @@ If the tag contains ":", then first try to remove the "()" surrounding it. If ":
 
 else If the tag contains "|", then raw_tag = tag, tag_weight = 1,
 
-else initialize tag_weight to 1.0, tag is surrounded by '()' each layer, weight * 1.1. tag is surrounded by ‘[] each layer, weight * 0.9. raw_tag is the content after removing all brackets
+else initialize tag_weight to 1.0, tag is surrounded by '()' each layer, weight * 1.1. tag is surrounded by ‘[]' each layer, weight * 0.9. raw_tag is the content after removing all brackets
+
+
+finish update_tags_path function. df is a dataframe. tag is a string list. if one item in tag list also in df's tag field. update this row's path field with _path. else insert a row, update the tag field with tag and same to path field.
+
+
+write a function named backup_file, accept 2 parameters: file_name as str, backup_limit as int.
+check and build a folder named 'backup' at the same path of file_name. Copy file_name to this folder and add timestamp (YYYYmmDDHHMMSSsss) before its extension if has, else to be its extension.
+After copying file, get the file number from backup folder. If its larger than backup_limit. delete the oldest file, to be judged by the timestamp in file name. not to the file create time.
 
 

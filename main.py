@@ -1,5 +1,10 @@
 import re
+import os
 import sys
+import time
+import shutil
+import glob
+import datetime
 import pandas as pd
 from collections import OrderedDict
 
@@ -52,6 +57,44 @@ def format_float(value):
         return str(value)
 
 
+def backup_file(file_name: str, backup_limit: int):
+    # Get the path of the file
+    file_path = os.path.abspath(file_name)
+    
+    # Get the directory of the file
+    file_dir = os.path.dirname(file_path)
+    
+    # Create the backup directory if it does not exist
+    backup_dir = os.path.join(file_dir, 'backup')
+    os.makedirs(backup_dir, exist_ok=True)
+    
+    # Get the timestamp
+    timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S_%f')[:-3]
+    
+    # Get the file extension
+    file_ext = os.path.splitext(file_name)[1]
+    
+    # Create the backup file name
+    backup_file_name = os.path.basename(file_name)
+    if file_ext:
+        backup_file_name = backup_file_name.replace(file_ext, f'_{timestamp}{file_ext}')
+    else:
+        backup_file_name = f'{backup_file_name}_{timestamp}'
+    
+    # Copy the file to the backup directory
+    backup_file_path = os.path.join(backup_dir, backup_file_name)
+    shutil.copy2(file_path, backup_file_path)
+    
+    # Get the number of backup files
+    backup_files = glob.glob(os.path.join(backup_dir, '*'))
+    num_backup_files = len(backup_files)
+    
+    # If the number of backup files is greater than the backup limit, delete the oldest file
+    if num_backup_files > backup_limit:
+        oldest_file = min(backup_files, key=os.path.getctime)
+        os.remove(oldest_file)
+
+
 def merge_df_keeping_left_value(left: pd.DataFrame, right: pd.DataFrame, on: str):
     df = left.merge(right, on=on, how='left', suffixes=('', '_y'))
     df = df.drop([col for col in df.columns if col.endswith('_y')], axis=1)
@@ -94,8 +137,8 @@ def save_tag_data(df: pd.DataFrame):
     df_public = df[df['private'] != 'Y']
 
     # Save the private and public dataframes to separate CSV files
-    df_private.to_csv('private.csv', index=False)
-    df_public.to_csv('public.csv', index=False)
+    df_private.to_csv('private.csv', index=False, encoding='utf-8')
+    df_public.to_csv('public.csv', index=False, encoding='utf-8')
 
 
 def parse_prompts(prompt_text: str):
@@ -155,7 +198,7 @@ def analysis_tag(tag: str):
     return raw_tag.strip(), tag_weight
 
 
-def tags_list_to_tag_data(tags: [str]):
+def tags_list_to_tag_data(tags: [str]) -> dict:
     data_tag = []
     data_weight = []
     for tag in tags:
@@ -356,17 +399,15 @@ class DraggableTree(QTreeWidget):
 
     def update_tags_path(self, df: pd.DataFrame, tags: [str], _path: str) -> pd.DataFrame or None:
         # Check if any of the tags already exist in the dataframe
-        existing_tags = df[df['tag'].isin(tags)]
-        if not existing_tags.empty:
-            # Update the path field for the existing tags
-            df.loc[existing_tags.index, 'path'] = _path
-            return None
-        else:
-            # Create a new row with the tags and path
-            new_row = pd.DataFrame({'tag': tags, 'path': [_path]*len(tags)})
-            # Append the new row to the dataframe
-            df = df.append(new_row, ignore_index=True)
-            return df
+        for tag in tags:
+            if tag in df['tag'].values:
+                df.loc[df['tag'] == tag, 'path'] = _path
+            else:
+                # Create a new row with the tags and path
+                new_row = pd.DataFrame({'tag': tags, 'path': [_path]*len(tags)})
+                # Append the new row to the dataframe
+                df = df.append(new_row, ignore_index=True)
+        return df
 
         # If the tags are new?
         # self.database.loc[self.database['tag'].isin(tags), 'path'] = _path
@@ -561,6 +602,7 @@ class AnalysisWindow(QWidget):
     def on_database_updated(self, new_df: pd.DataFrame = None, refresh_ui: bool = True):
         if new_df is not None:
             self.tag_database = new_df
+            self.tree.database = new_df
         self.tag_database = self.tag_database.reindex().fillna('')
         self.save_database()
         if refresh_ui:
@@ -573,22 +615,22 @@ class AnalysisWindow(QWidget):
         # If the tag not in tag_database, the columns are empty string. The same to negative_df.
 
         if positive:
-            positive_tag_data = tags_list_to_tag_data(unique_list(self.positive_tags))
+            positive_tag_data_dict = tags_list_to_tag_data(unique_list(self.positive_tags))
             if not self.tag_database.empty:
-                self.positive_df = pd.DataFrame(positive_tag_data)
+                self.positive_df = pd.DataFrame(positive_tag_data_dict)
                 self.positive_df = merge_df_keeping_left_value(self.positive_df, self.tag_database, on='tag')
             else:
-                self.positive_df = pd.DataFrame(positive_tag_data, columns=DATABASE_FIELDS).fillna('')
+                self.positive_df = pd.DataFrame(positive_tag_data_dict, columns=DATABASE_FIELDS).fillna('')
             if refresh_ui:
                 dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [])
 
         if negative:
-            negative_tag_data = tags_list_to_tag_data(unique_list(self.negative_tags))
+            negative_tag_data_dict = tags_list_to_tag_data(unique_list(self.negative_tags))
             if not self.tag_database.empty:
-                self.negative_df = pd.DataFrame(negative_tag_data)
+                self.negative_df = pd.DataFrame(negative_tag_data_dict)
                 self.negative_df = merge_df_keeping_left_value(self.negative_df, self.tag_database, on='tag')
             else:
-                self.negative_df = pd.DataFrame(negative_tag_data, columns=DATABASE_FIELDS).fillna('')
+                self.negative_df = pd.DataFrame(negative_tag_data_dict, columns=DATABASE_FIELDS).fillna('')
             if refresh_ui:
                 dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [])
 
@@ -612,7 +654,14 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('Stable Diffusion Tag 分析管理 - Sleepy')
 
 
+def test_backup_file():
+    for i in range(0, 20):
+        backup_file('D:/A.csv', 10)
+        time.sleep(1)
+
+
 if __name__ == '__main__':
+    # test_backup_file()
     app = QApplication(sys.argv)
     main_window = MainWindow()
     main_window.show()
