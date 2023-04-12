@@ -10,7 +10,6 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBo
     QGroupBox, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QAbstractItemView, QDialog, QPushButton, \
     QDialogButtonBox
 
-
 DATABASE_SUPPORT_FIELD = OrderedDict([
     ('tag', '标签'),
     ('path', '功能分组'),
@@ -31,8 +30,17 @@ ANALYSIS_SHOW_COLUMNS = OrderedDict()
 for f in ANALYSIS_DISPLAY_FIELD:
     ANALYSIS_SHOW_COLUMNS[f] = DATABASE_SUPPORT_FIELD[f]
 
+PRESET_TAG_PATH = ['通用正向', '通用反向',
+                   '场景/室外', '场景/室内', '场景/幻境',
+                   '脸部/头发', '脸部/眼睛', '脸部/嘴巴',
+                   '衣服', '动作', '特效', '18x']
 
-PRESET_TAG_PATH = []
+
+# Do not use set to keep list order
+def unique_list(lst: list or tuple) -> list:
+    result = []
+    [result.append(item) for item in lst if item not in result]
+    return result
 
 
 def load_tag_data():
@@ -81,7 +89,7 @@ def parse_prompts(prompt_text: str):
     def trim_colon(text: str) -> str:
         i1 = text.find(',')
         i2 = text.find(':')
-        if i2 >= 0 and i2 < i1:
+        if 0 <= i2 < i1:
             text = text[text.index(':') + 1:]
         return text
 
@@ -149,7 +157,6 @@ def tags_list_to_tag_data(tags: [str]):
 def dataframe_to_table_widget(
         table_widget: QTableWidget, dataframe: pd.DataFrame,
         field_mapping: OrderedDict, extra_headers: [str]):
-
     # Clear the table
     table_widget.clear()
     table_widget.setRowCount(0)
@@ -398,7 +405,9 @@ class AnalysisWindow(QWidget):
         self.tree_group = QGroupBox("Tree", parent=self)
         # Create the tree widget for the tree group
         self.tree = DraggableTree(self.tag_database, self.on_database_updated, parent=self)
-        self.tree.setHeaderHidden(True)
+        # Create the tree widget for the tree group with one column and the specified name
+        self.tree.setHeaderLabels(['Tag分类（Drag & Drop）'])
+        self.tree.setColumnCount(1)
         tree_group_layout = QVBoxLayout()
         tree_group_layout.addWidget(self.tree)
         self.tree_group.setLayout(tree_group_layout)
@@ -448,8 +457,8 @@ class AnalysisWindow(QWidget):
         # Call parse_prompts with the input of self.text_edit
         self.positive_tags, self.negative_tags, self.extra_data = parse_prompts(self.text_edit.toPlainText())
 
-        positive_tag_data = tags_list_to_tag_data(self.positive_tags)
-        negative_tag_data = tags_list_to_tag_data(self.negative_tags)
+        positive_tag_data = tags_list_to_tag_data(unique_list(self.positive_tags))
+        negative_tag_data = tags_list_to_tag_data(unique_list(self.negative_tags))
 
         # Join positive_df with tag_database by 'tag' row. Keep all tag_database columns.
         # If the tag not in tag_database, the columns are empty string. The same to negative_df.
@@ -478,7 +487,7 @@ class AnalysisWindow(QWidget):
         self.tree.clear()
 
         # Get unique path values from tag_database
-        unique_paths = self.tag_database['path'].unique()
+        unique_paths = unique_list(PRESET_TAG_PATH + list(self.tag_database['path'].unique()))
 
         # Loop through each unique path
         for path in unique_paths:
