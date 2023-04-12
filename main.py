@@ -43,8 +43,8 @@ ANALYSIS_SHOW_COLUMNS['weight'] = '权重'
 PRESET_TAG_PATH = ['正向效果', '反向效果', '中立效果',
                    '场景/室外', '场景/室内', '场景/幻境',
                    '角色/女性', '角色/男性', '角色/福瑞',
-                   '脸部/头发', '脸部/眼睛', '脸部/嘴巴',
-                   '衣服', '动作', '视角', '18x']
+                   '脸部/头发', '脸部/眼睛', '脸部/嘴巴', '脸部/表情',
+                   '衣服', '动作', '视角', '绘画风格', '18x']
 
 ANALYSIS_README = """使用说明：
 1. 将tags粘贴到左边的输入框中。第一行为正面tag，第二行为负面tag，忽略空行以及三行之后的附加数据。可以直接粘贴从C站上复制下来的图片参数。
@@ -111,6 +111,18 @@ def backup_file(file_name: str, backup_limit: int):
     if num_backup_files > backup_limit:
         oldest_file = min(backup_files, key=os.path.getctime)
         os.remove(oldest_file)
+
+
+def backup_file_safe(file_name: str, backup_limit: int) -> bool:
+    try:
+        backup_file(file_name, backup_limit)
+        return True
+    except Exception as e:
+        print('Back file error.')
+        print(e)
+        return False
+    finally:
+        pass
 
 
 def merge_df_keeping_left_value(left: pd.DataFrame, right: pd.DataFrame, on: str):
@@ -659,8 +671,8 @@ class AnalysisWindow(QWidget):
                 dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [])
 
     def save_database(self):
-        backup_file(PUBLIC_DATABASE, BACKUP_LIMIT)
-        backup_file(PRIVATE_DATABASE, BACKUP_LIMIT)
+        backup_file_safe(PUBLIC_DATABASE, BACKUP_LIMIT)
+        backup_file_safe(PRIVATE_DATABASE, BACKUP_LIMIT)
         save_tag_data(self.tag_database)
 
 
