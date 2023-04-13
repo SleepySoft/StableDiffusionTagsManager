@@ -43,9 +43,9 @@ ANALYSIS_SHOW_COLUMNS['weight'] = '权重'
 PRESET_TAG_PATH = ['正向效果', '反向效果', '中立效果',
                    '场景/室外', '场景/室内', '场景/幻境', '场景/道具', '场景/光影',
                    '角色/女性', '角色/男性', '角色/福瑞',
-                   '脸部/头发', '脸部/眼睛', '脸部/嘴巴', '脸部/表情',
-                   '身体', '服饰', '饰品', '动作',  '感觉', '视角', '图片风格',
-                   '18x', '玄学？']
+                   '脸部/头发', '脸部/眼睛', '脸部/嘴巴', '脸部/表情', '脸部/其它',
+                   '人物/身体', '人物/服饰', '人物/饰品', '人物/动作', '人物/感觉', '人物/人种',
+                   '视角', '图片风格', '18x', '非通用描述', '玄学？']
 
 ANALYSIS_README = """使用说明：
 1. 将tags粘贴到左边的输入框中。第一行为正面tag，第二行为负面tag，忽略空行以及三行之后的附加数据。可以直接粘贴从C站上复制下来的图片参数。
@@ -630,7 +630,7 @@ class AnalysisWindow(QWidget):
         self.tree.expandAll()
 
     def do_edit_item(self, table: QTableWidget, row, df):
-        item = self.positive_table.item(row, 0)
+        item = table.item(row, 0)
         if item is not None:
             # Get the tag from the selected row
             tag = table.item(row, 0).text()
