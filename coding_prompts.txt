@@ -104,8 +104,13 @@ create a readonly multiple line text to replace reserved_area which named text_c
 Write a function named translate df. Accept 3 parameters: df as dataframe,  text_field as str, trans_field as str. For each row call youdao_translate with text_field data and fill the result to trans_field if the trans_field is empty string.
 
 
-Add a menu layout as horizon layout between top_layout and bottom_layout, weight is 0. 
-Add buttons in this layout named '自动翻译' link to on_button_translate
-Add check button in this layout named '按组序' link to on_check_group. default value checked.
 
+pop up a quest box with yes and no button: 
+'''将使用有道对未翻译的tag进行翻译，需要联网。机翻精度有限，仅供参考。
+由于采用同步的方式进行网络请求，在翻译过程中界面会无法操作，这是正常现象。
+翻译结果不会自动保存。需要对tag进行编辑操作（如双击或拖动分组）后相应的数据才能被保存。
+
+是否继续？
+'''
+if click no, return.
 
