@@ -118,52 +118,134 @@ def upsert_df_from_right(df_left: pd.DataFrame, df_right: pd.DataFrame, primary_
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def create_df_left() -> pd.DataFrame:
-    import pandas as pd
+# def create_df_left() -> pd.DataFrame:
+#     import pandas as pd
+#
+#     tags = ['A', 'B', 'C', 'D', 'E']
+#     translates = ['', 'banana', 'cherry', '', 'elephant']
+#
+#     data = {'tag': tags, 'translate': translates}
+#     df_left = pd.DataFrame(data)
+#
+#     return df_left
+#
+#
+# def create_df_right() -> pd.DataFrame:
+#     tags = ['D', 'E', 'F', 'G', 'H']
+#     translates = ['vulture', 'walrus', 'xenops', 'yak', 'zebra']
+#     col1 = ['dog', 'cat', 'bird', 'fish', 'hamster']
+#     col2 = ['red', 'orange', 'yellow', 'green', 'blue']
+#     col3 = ['car', 'bus', 'train', 'plane', 'boat']
+#     col4 = ['rock', 'pop', 'jazz', 'blues', 'country']
+#     col5 = ['pizza', 'burger', 'taco', 'sushi', 'pasta']
+#     col6 = ['soccer', 'basketball', 'tennis', 'golf', 'swimming']
+#
+#     data = {'tag': tags,
+#             'translate': translates,
+#             'col1': col1,
+#             'col2': col2,
+#             'col3': col3,
+#             'col4': col4,
+#             'col5': col5,
+#             'col6': col6}
+#     df_right = pd.DataFrame(data)
+#
+#     return df_right
+#
+#
+# def test_update_df_from_right_value():
+#     df_left = create_df_left()
+#     df_right = create_df_right()
+#     df_new = update_df_from_right_value(df_left, df_right, 'tag')
+#     print(df_new)
 
-    tags = ['A', 'B', 'C', 'D', 'E']
-    translates = ['', 'banana', 'cherry', '', 'elephant']
 
-    data = {'tag': tags, 'translate': translates}
-    df_left = pd.DataFrame(data)
+def test_merge_df_keeping_left_value():
+    left = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
+    right = pd.DataFrame({'A': [1, 3], 'B': [100, 200], 'C': [5, 6]})
 
-    return df_left
+    result = merge_df_keeping_left_value(left, right, on='A')
 
-
-def create_df_right() -> pd.DataFrame:
-    tags = ['D', 'E', 'F', 'G', 'H']
-    translates = ['vulture', 'walrus', 'xenops', 'yak', 'zebra']
-    col1 = ['dog', 'cat', 'bird', 'fish', 'hamster']
-    col2 = ['red', 'orange', 'yellow', 'green', 'blue']
-    col3 = ['car', 'bus', 'train', 'plane', 'boat']
-    col4 = ['rock', 'pop', 'jazz', 'blues', 'country']
-    col5 = ['pizza', 'burger', 'taco', 'sushi', 'pasta']
-    col6 = ['soccer', 'basketball', 'tennis', 'golf', 'swimming']
-
-    data = {'tag': tags,
-            'translate': translates,
-            'col1': col1,
-            'col2': col2,
-            'col3': col3,
-            'col4': col4,
-            'col5': col5,
-            'col6': col6}
-    df_right = pd.DataFrame(data)
-
-    return df_right
+    expected_result = pd.DataFrame({'A': [1, 2], 'B': [3, 4], 'C': [5.0, '']})
+    pd.testing.assert_frame_equal(result, expected_result)
 
 
 def test_update_df_from_right_value():
-    df_left = create_df_left()
-    df_right = create_df_right()
-    df_new = update_df_from_right_value(df_left, df_right, 'tag')
-    print(df_new)
+    df_left = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
+    df_right = pd.DataFrame({'A': [1, 3], 'B': [5, 6], 'C': [7, 8]})
+
+    result = update_df_from_right_value(df_left, df_right, 'A')
+    expected_result = pd.DataFrame({'A': [1, 2], 'B': [5, 4], 'C': [7.0, '']})
+    pd.testing.assert_frame_equal(result, expected_result)
+
+    df_left = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
+    df_right = pd.DataFrame({'A': [1, 3], 'C': [5, 6]})
+
+    result = update_df_from_right_value(df_left, df_right, 'A')
+    expected_result = pd.DataFrame({'A': [1, 2], 'B': [3, 4], 'C': [5.0, '']})
+    pd.testing.assert_frame_equal(result, expected_result)
+
+    df_left = pd.DataFrame({'A': [1, 2]})
+    df_right = pd.DataFrame({'A': [1, 3], 'B': [5, 6]})
+
+    result = update_df_from_right_value(df_left, df_right, 'A')
+    expected_result = pd.DataFrame({'A': [1, 2], 'B': [5, 4], 'C': [7.0, '']})
+    pd.testing.assert_frame_equal(result, expected_result)
+
+def test_update_df_from_right_value_if_empty():
+    df_left = pd.DataFrame({'A': [1, 2], 'B': [3, None]})
+    df_right = pd.DataFrame({'A': [1, 3], 'B': [5, 6], 'C': [7, 8]})
+
+    result = update_df_from_right_value_if_empty(df_left, df_right, 'A')
+    expected_result = pd.DataFrame({'A': [1, 2], 'B': [5.0, None], 'C': [7.0, None]})
+    pd.testing.assert_frame_equal(result, expected_result)
+
+    df_left = pd.DataFrame({'A': [1, 2], 'B': [3, '']})
+    df_right = pd.DataFrame({'A': [1, 3], 'B': [5, 6], 'C': [7, 8]})
+
+    result = update_df_from_right_value_if_empty(df_left, df_right, 'A')
+    expected_result = pd.DataFrame({'A': [1, 2], 'B': [5.0, ''], 'C': [7.0, None]})
+    pd.testing.assert_frame_equal(result, expected_result)
+
+    df_left = pd.DataFrame({'A': [1, 2]})
+    df_right = pd.DataFrame({'A': [1, 3], 'B': [5, 6]})
+
+    result = update_df_from_right_value_if_empty(df_left, df_right, 'A')
+    expected_result = pd.DataFrame({'A': [1, 2], 'B': [5.0, None]})
+    pd.testing.assert_frame_equal(result, expected_result)
+
+    df_left = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
+    df_right = pd.DataFrame({'A': [1, 3], 'C': [5, 6]})
+
+    result = update_df_from_right_value_if_empty(df_left, df_right, 'A')
+    expected_result = pd.DataFrame({'A': [1, 2], 'B': [3, 4], 'C': [5.0, None]})
+    pd.testing.assert_frame_equal(result, expected_result)
+
+
+def test_upsert_df_from_right():
+    data_left = {'id': [1, 2, 3], 'value': ['a', 'b', 'c'], 'extra_left': ['x', 'y', 'z']}
+    df_left = pd.DataFrame(data_left)
+
+    data_right = {'id': [2, 3, 4, 5], 'value': ['x', 'y', 'z', 'w'], 'extra_right': ['p', 'q', 'r', 's']}
+    df_right = pd.DataFrame(data_right)
+
+    df_merged = upsert_df_from_right(df_left, df_right, 'id')
+
+    expected_data = {'id': [1, 2, 3, 4, 5],
+                     'value': ['a', 'x', 'y', 'z', 'w'],
+                     'extra_left': ['x', '', '', '', ''],
+                     'extra_right': ['', 'p', 'q', 'r', 's']}
+    expected_df = pd.DataFrame(expected_data)
+
+    pd.testing.assert_frame_equal(df_merged, expected_df)
 
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 def main():
+    test_merge_df_keeping_left_value()
     test_update_df_from_right_value()
+    test_upsert_df_from_right()
 
 
 if __name__ == '__main__':
