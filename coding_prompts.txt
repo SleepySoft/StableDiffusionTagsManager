@@ -114,3 +114,18 @@ pop up a quest box with yes and no button:
 '''
 if click no, return.
 
+
+
+write a function named update_new_translate_to_database, accept 1 parameters df as dataframe.
+'tag' field is the primary key.
+for each row in df,
+if 'tag' field data not in self.tag_database, insert a row into self.tag_database with tag and translate_cn value updated
+else if the translate_cn field in self.tag_database
+
+
+write a function named update_df_keeping_right_value(). accept 3 parameters: df_left as dataframe, df_right as dataframe, primary_key as str.
+ensure df_left and df_right have primary_key specified filed.
+merge df_left and df_right left on primary_key, update value from df_right if primary_key matches.
+set all empty field as empty string.
+
+

@@ -5,7 +5,6 @@ import time
 import shutil
 import glob
 import datetime
-import requests
 import pandas as pd
 from collections import OrderedDict
 
@@ -15,6 +14,8 @@ from PyQt5.QtCore import QMimeData
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QPlainTextEdit, \
     QGroupBox, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QAbstractItemView, QDialog, QPushButton, \
     QDialogButtonBox, QCheckBox, QMessageBox
+
+from df_utility import *
 
 PUBLIC_DATABASE = 'public.csv'
 PRIVATE_DATABASE = 'private.csv'
@@ -58,59 +59,6 @@ ANALYSIS_README = """使用说明：
 """
 
 
-# From new Bing
-# Thanks youdao providing API KEY free translate service.
-
-def youdao_translate(query, from_lang='AUTO', to_lang='AUTO'):
-    url = 'http://fanyi.youdao.com/translate'
-    data = {
-        "i": query,
-        "from": from_lang,
-        "to": to_lang,
-        "smartresult": "dict",
-        "client": "fanyideskweb",
-        "salt": "16081210430989",
-        "doctype": "json",
-        "version": "2.1",
-        "keyfrom": "fanyi.web",
-        "action": "FY_BY_CLICKBUTTION"
-    }
-    res = requests.post(url, data=data).json()
-    return res['translateResult'][0][0]['tgt']
-
-
-translate_cache = {}
-
-
-def translate_df(df, text_field, trans_field, use_cache: bool):
-    """
-    Translates the text in the specified text_field of each row of the dataframe using youdao_translate function
-    and fills the result to the specified trans_field if the trans_field is empty string.
-    Optimised by new bing.
-
-    Args:
-        df (pandas.DataFrame): The dataframe to translate.
-        text_field (str): The name of the field containing the text to translate.
-        trans_field (str): The name of the field to fill with the translation.
-        use_cache (bool): If yes. Use cache else always do translation.
-
-    Returns:
-        None
-    """
-
-    def translate_text(row):
-        if not row[trans_field]:
-            original_text = row[text_field]
-            if use_cache:
-                if original_text not in translate_cache:
-                    translate_cache[original_text] = youdao_translate(original_text)
-                translated_text = translate_cache[original_text]
-            else:
-                translated_text = youdao_translate(original_text)
-            return translated_text
-        return row[trans_field]
-    if not df.empty:
-        df[trans_field] = df.apply(translate_text, axis=1)
 
 
 # Do not use set to keep list order
@@ -180,13 +128,6 @@ def backup_file_safe(file_name: str, backup_limit: int) -> bool:
         return False
     finally:
         pass
-
-
-def merge_df_keeping_left_value(left: pd.DataFrame, right: pd.DataFrame, on: str):
-    df = left.merge(right, on=on, how='left', suffixes=('', '_y'))
-    df = df.drop([col for col in df.columns if col.endswith('_y')], axis=1)
-    df = df.fillna('')
-    return df
 
 
 def load_tag_data():
@@ -679,7 +620,11 @@ class AnalysisWindow(QWidget):
     # Define a function to be called when the translate button is clicked
     def on_button_translate(self):
         # Pop up a message box with yes and no button
-        reply = QMessageBox.question(self, 'Translation Confirmation', '将使用有道对未翻译的tag进行翻译，需要联网。机翻精度有限，仅供参考。\n由于采用同步的方式进行网络请求，在翻译过程中界面会无法操作，这是正常现象。\n翻译结果不会自动保存。需要对tag进行编辑操作（如双击或拖动分组）后相应的数据才能被保存。\n\n是否继续？', QMessageBox.Yes | QMessageBox.No)
+        reply = QMessageBox.question(self, 'Translation Confirmation',
+                                     '将使用有道对未翻译的tag进行翻译，需要联网。机翻精度有限，仅供参考。\n'
+                                     '由于采用同步的方式进行网络请求，在翻译过程中界面会无法操作，这是正常现象。\n'
+                                     '由于机制原因，翻译结果会自动保存。对于不完美的翻译可以手动修改。\n\n'
+                                     '是否继续？', QMessageBox.Yes | QMessageBox.No)
         # If the user clicks no, return
         if reply == QMessageBox.No:
             return
