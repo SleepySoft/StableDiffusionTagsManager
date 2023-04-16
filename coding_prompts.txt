@@ -100,3 +100,12 @@ After copying file, get the file number that matches this file's backup name fro
 
 create a readonly multiple line text to replace reserved_area which named text_comments showing ANALYSIS_README
 
+
+Write a function named translate df. Accept 3 parameters: df as dataframe,  text_field as str, trans_field as str. For each row call youdao_translate with text_field data and fill the result to trans_field if the trans_field is empty string.
+
+
+Add a menu layout as horizon layout between top_layout and bottom_layout, weight is 0. 
+Add buttons in this layout named '自动翻译' link to on_button_translate
+Add check button in this layout named '按组序' link to on_check_group. default value checked.
+
+

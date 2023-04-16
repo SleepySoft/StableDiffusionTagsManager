@@ -5,6 +5,7 @@ import time
 import shutil
 import glob
 import datetime
+import requests
 import pandas as pd
 from collections import OrderedDict
 
@@ -13,7 +14,7 @@ from PyQt5.QtCore import Qt, QDataStream
 from PyQt5.QtCore import QMimeData
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QPlainTextEdit, \
     QGroupBox, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QAbstractItemView, QDialog, QPushButton, \
-    QDialogButtonBox
+    QDialogButtonBox, QCheckBox
 
 PUBLIC_DATABASE = 'public.csv'
 PRIVATE_DATABASE = 'private.csv'
@@ -55,6 +56,46 @@ ANALYSIS_README = """使用说明：
 4. 双击tag列表可以编辑该tag的详细信息，点击确定后该tag信息会更新到数据库。
    注：如果不对新tag进行3或4的操作，则这个tag不会放入数据库。建议只把有用的tag加入数据库。你也可以通过excel修改数据库的csv文件。
 """
+
+
+# From new Bing
+# Thanks youdao providing API KEY free translate service.
+
+def youdao_translate(query, from_lang='AUTO', to_lang='AUTO'):
+    url = 'http://fanyi.youdao.com/translate'
+    data = {
+        "i": query,
+        "from": from_lang,
+        "to": to_lang,
+        "smartresult": "dict",
+        "client": "fanyideskweb",
+        "salt": "16081210430989",
+        "doctype": "json",
+        "version": "2.1",
+        "keyfrom": "fanyi.web",
+        "action": "FY_BY_CLICKBUTTION"
+    }
+    res = requests.post(url, data=data).json()
+    return res['translateResult'][0][0]['tgt']
+
+
+def translate_df(df, text_field, trans_field):
+    """
+    Translates the text in the specified text_field of each row of the dataframe using youdao_translate function
+    and fills the result to the specified trans_field if the trans_field is empty string.
+
+    Args:
+        df (pandas.DataFrame): The dataframe to translate.
+        text_field (str): The name of the field containing the text to translate.
+        trans_field (str): The name of the field to fill with the translation.
+
+    Returns:
+        None
+    """
+    for index, row in df.iterrows():
+        if not row[trans_field]:  # if trans_field is empty
+            translated_text = youdao_translate(row[text_field])
+            df.at[index, trans_field] = translated_text
 
 
 # Do not use set to keep list order
@@ -505,6 +546,22 @@ class AnalysisWindow(QWidget):
         top_layout.setStretch(1, 45)
         # Add the top layout to the root layout
         root_layout.addLayout(top_layout)
+
+        # Create the menu layout as a horizontal layout
+        menu_layout = QHBoxLayout()
+        # Add the '自动翻译' button to the menu layout and link it to the on_button_translate function
+        auto_translate_button = QPushButton('自动翻译')
+        auto_translate_button.clicked.connect(self.on_button_translate)
+        menu_layout.addWidget(auto_translate_button)
+        group_check_button = QCheckBox('按组排列')
+        group_check_button.setChecked(True)
+        group_check_button.clicked.connect(self.on_check_group)
+        menu_layout.addWidget(group_check_button)
+        # Add a stretch that weights max to the menu layout
+        menu_layout.addStretch(1)
+        # Add the menu layout to the root layout between the top and bottom layouts
+        root_layout.addLayout(menu_layout)
+
         # Create the group widget for the positive table
         self.positive_group = QGroupBox("Positive", parent=self)
         # Create the multiple column table for the positive group
@@ -548,7 +605,8 @@ class AnalysisWindow(QWidget):
         # Add the bottom layout to the root layout
         root_layout.addLayout(bottom_layout)
         root_layout.setStretch(0, 2)
-        root_layout.setStretch(1, 8)
+        root_layout.setStretch(1, 0)
+        root_layout.setStretch(2, 8)
 
         # Connect the on_prompt_edit function to the textChanged signal of self.text_edit
         self.text_edit.textChanged.connect(self.on_prompt_edit)
@@ -587,6 +645,12 @@ class AnalysisWindow(QWidget):
     # Define a function to be called when a cell in the negative table is double clicked
     def on_negative_table_double_click(self, row, column):
         self.do_edit_item(self.negative_table, row, self.negative_df)
+
+    def on_button_translate(self):
+        self.translate_unknown_tags()
+
+    def on_check_group(self):
+        pass
 
     def update_tag_path_tree(self):
         # Clear the tree
@@ -639,6 +703,16 @@ class AnalysisWindow(QWidget):
 
             if result == QDialog.Accepted:
                 self.on_edit_done()
+
+    def translate_unknown_tags(self):
+        translate_df(self.positive_df, 'tag', 'translate_cn')
+        translate_df(self.negative_df, 'tag', 'translate_cn')
+        dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [])
+        dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [])
+
+    def do_translate(self, text) -> str:
+        result = youdao_translate(text, from_lang='en', to_lang='zh-CHS')
+        return result
 
     # ---------------------------------------------------------------------------------------------
 
