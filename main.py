@@ -269,10 +269,10 @@ def dataframe_to_table_widget(
     for row in range(len(dataframe)):
         for col, field in enumerate(field_mapping.keys()):
             item_text = str(dataframe.loc[row, field])
-            print(item_text, end=' ')
+            # print(item_text, end=' ')
             item = QTableWidgetItem(item_text)
             table_widget.setItem(row, col, item)
-        print('')
+        # print('')
 
 
 class DataFrameRowEditDialog(QDialog):
