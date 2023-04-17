@@ -485,7 +485,7 @@ class AnalysisWindow(QWidget):
         self.negative_df = pd.DataFrame(columns=DATABASE_FIELDS)
 
         self.tag_database = load_tag_data()
-        self.tag_memory_db = pd.DataFrame(columns=DATABASE_FIELDS)
+        # self.tag_memory_db = pd.DataFrame(columns=DATABASE_FIELDS)
 
         # Create the root layout
         root_layout = QVBoxLayout(self)
@@ -692,11 +692,11 @@ class AnalysisWindow(QWidget):
         translate_df(self.positive_df, 'tag', 'translate_cn', True)
         translate_df(self.negative_df, 'tag', 'translate_cn', True)
 
-        positive_translate_dict = [{'translate_cn': weight} for weight in self.positive_df['translate_cn']]
-        negative_translate_dict = [{'translate_cn': weight} for weight in self.negative_df['translate_cn']]
-
-        update_df_by_dicts(self.tag_memory_db, positive_translate_dict, 'tag')
-        update_df_by_dicts(self.tag_memory_db, negative_translate_dict, 'tag')
+        # positive_translate_dict = [{'translate_cn': weight} for weight in self.positive_df['translate_cn']]
+        # negative_translate_dict = [{'translate_cn': weight} for weight in self.negative_df['translate_cn']]
+        #
+        # update_df_by_dicts(self.tag_memory_db, positive_translate_dict, 'tag')
+        # update_df_by_dicts(self.tag_memory_db, negative_translate_dict, 'tag')
 
         dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [])
         dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [])
@@ -725,14 +725,10 @@ class AnalysisWindow(QWidget):
         if positive:
             positive_tag_data_dict = tags_list_to_tag_data(unique_list(self.positive_tags))
             if not self.tag_database.empty:
+                positive_translate_df = self.positive_df[['tag', 'translate_cn']].copy()
                 self.positive_df = pd.DataFrame(positive_tag_data_dict)
-                positive_backup_dict = [{'weight': weight} for weight in self.positive_df['weight']]
-
-                self.positive_df = update_df_from_right_value(self.positive_df, self.tag_database, 'tag')
-                self.positive_df = update_df_from_right_value_if_empty(self.positive_df, self.tag_memory_db, 'tag')
-                update_df_by_dicts(self.positive_df, positive_backup_dict, 'tag')
-
-                self.tag_memory_db = concat_df_exclude(self.tag_memory_db, self.positive_df, self.tag_database, 'tag')
+                self.positive_df = merge_df_keeping_left_value(self.positive_df, self.tag_database, 'tag')
+                self.positive_df = update_df_from_right_value_if_empty(self.positive_df, positive_translate_df, 'tag')
             else:
                 self.positive_df = pd.DataFrame(positive_tag_data_dict, columns=DATABASE_FIELDS).fillna('')
             if refresh_ui:
@@ -741,14 +737,10 @@ class AnalysisWindow(QWidget):
         if negative:
             negative_tag_data_dict = tags_list_to_tag_data(unique_list(self.negative_tags))
             if not self.tag_database.empty:
+                negative_translate_df = self.negative_df[['tag', 'translate_cn']].copy()
                 self.negative_df = pd.DataFrame(negative_tag_data_dict)
-                negative_backup_dict = [{'weight': weight} for weight in self.negative_df['weight']]
-
-                self.negative_df = update_df_from_right_value(self.negative_df, self.tag_database, 'tag')
-                self.negative_df = update_df_from_right_value_if_empty(self.negative_df, self.tag_memory_db, 'tag')
-                update_df_by_dicts(self.negative_df, negative_backup_dict, 'tag')
-
-                self.tag_memory_db = concat_df_exclude(self.tag_memory_db, self.negative_df, self.tag_database, 'tag')
+                self.negative_df = merge_df_keeping_left_value(self.negative_df, self.tag_database, 'tag')
+                self.negative_df = update_df_from_right_value_if_empty(self.negative_df, negative_translate_df, 'tag')
             else:
                 self.negative_df = pd.DataFrame(negative_tag_data_dict, columns=DATABASE_FIELDS).fillna('')
             if refresh_ui:

@@ -121,21 +121,21 @@ def upsert_df_from_right(df_left: pd.DataFrame, df_right: pd.DataFrame, primary_
     return df_merged
 
 
-def update_df_by_dicts(df: pd.DataFrame, data: dict or [dict], primary_key: str):
-    if primary_key not in df.columns:
-        raise ValueError(f"Primary key '{primary_key}' not found in DataFrame columns")
-
-    if isinstance(data, dict):
-        data = [data]
-
-    for d in data:
-        if primary_key not in d.keys():
-            raise ValueError(f"Primary key '{primary_key}' not found in data key")
-
-        mask = df[primary_key] == row[primary_key]
-        for key in row:
-            if key in df.columns:
-                df.loc[mask, key] = row[key]
+# def update_df_by_dicts(df: pd.DataFrame, data: dict or [dict], primary_key: str):
+#     if primary_key not in df.columns:
+#         raise ValueError(f"Primary key '{primary_key}' not found in DataFrame columns")
+#
+#     if isinstance(data, dict):
+#         data = [data]
+#
+#     for d in data:
+#         if primary_key not in d.keys():
+#             raise ValueError(f"Primary key '{primary_key}' not found in data key")
+#
+#         mask = df[primary_key] == row[primary_key]
+#         for key in row:
+#             if key in df.columns:
+#                 df.loc[mask, key] = row[key]
 
 
 def concat_df_exclude(df1: pd.DataFrame, df2: pd.DataFrame, df3: pd.DataFrame, primary_key: str):
@@ -357,71 +357,71 @@ def test_upsert_df_from_right():
     pd.testing.assert_frame_equal(df_merged, expected_df)
 
 
-def test_update_df_by_dicts_1():
-    # Test case 1: data is a dict and data's keys exist in df
-    df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
-    data = {'A': 1, 'B': 6}
-    primary_key = 'A'
-    expected_df = pd.DataFrame({'A': [1, 2], 'B': [6, 4]})
-
-    update_df_by_dicts(df, data, primary_key)
-    assert_frame_equal(df, expected_df)
-
-
-def test_update_df_by_dicts_2():
-    # Test case 2: data is a dict and data's keys do not exist in df
-    df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
-    data = {'A': 1, 'C': 5}
-    primary_key = 'A'
-    expected_df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
-
-    update_df_by_dicts(df, data, primary_key)
-    assert_frame_equal(df, expected_df)
-
-
-def test_update_df_by_dicts_3():
-    # Test case 3: data is a list of dicts and can update multiple rows
-    df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
-    data = [{'A': 1, 'B': 6}, {'A': 2, 'B': 8}]
-    primary_key = 'A'
-    expected_df = pd.DataFrame({'A': [1, 2], 'B': [6, 8]})
-
-    update_df_by_dicts(df, data, primary_key)
-    assert_frame_equal(df, expected_df)
-
-
-def test_update_df_by_dicts_4():
-    # Test case 4: data is a list of dicts and cannot update any rows
-    df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
-    data = [{'A': 5, 'B': 6}, {'A': 7, 'B': 8}]
-    primary_key = 'A'
-    expected_df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
-
-    update_df_by_dicts(df, data, primary_key)
-    assert_frame_equal(df, expected_df)
-
-
-def test_update_df_by_dicts_5():
-    # Test case 5: data is a list of dicts and can partially update rows
-    df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
-    data = [{'A': 1, 'B': 6}, {'A': 7, 'B': 8}]
-    primary_key = 'A'
-    expected_df = pd.DataFrame({'A': [1, 2], 'B': [6, 4]})
-
-    update_df_by_dicts(df, data, primary_key)
-    assert_frame_equal(df, expected_df)
-
-
-def test_update_df_by_dicts_6():
-    # Test case 6: primary_key is not in df's columns
-    df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
-    data = [{'A': 1, 'B': 6}, {'A': 7, 'B': 8}]
-    primary_key = 'C'
-
-    try:
-        update_df_by_dicts(df, data, primary_key)
-    except ValueError as e:
-        assert str(e) == f"Primary key '{primary_key}' not found in DataFrame columns"
+# def test_update_df_by_dicts_1():
+#     # Test case 1: data is a dict and data's keys exist in df
+#     df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
+#     data = {'A': 1, 'B': 6}
+#     primary_key = 'A'
+#     expected_df = pd.DataFrame({'A': [1, 2], 'B': [6, 4]})
+#
+#     update_df_by_dicts(df, data, primary_key)
+#     assert_frame_equal(df, expected_df)
+#
+#
+# def test_update_df_by_dicts_2():
+#     # Test case 2: data is a dict and data's keys do not exist in df
+#     df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
+#     data = {'A': 1, 'C': 5}
+#     primary_key = 'A'
+#     expected_df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
+#
+#     update_df_by_dicts(df, data, primary_key)
+#     assert_frame_equal(df, expected_df)
+#
+#
+# def test_update_df_by_dicts_3():
+#     # Test case 3: data is a list of dicts and can update multiple rows
+#     df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
+#     data = [{'A': 1, 'B': 6}, {'A': 2, 'B': 8}]
+#     primary_key = 'A'
+#     expected_df = pd.DataFrame({'A': [1, 2], 'B': [6, 8]})
+#
+#     update_df_by_dicts(df, data, primary_key)
+#     assert_frame_equal(df, expected_df)
+#
+#
+# def test_update_df_by_dicts_4():
+#     # Test case 4: data is a list of dicts and cannot update any rows
+#     df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
+#     data = [{'A': 5, 'B': 6}, {'A': 7, 'B': 8}]
+#     primary_key = 'A'
+#     expected_df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
+#
+#     update_df_by_dicts(df, data, primary_key)
+#     assert_frame_equal(df, expected_df)
+#
+#
+# def test_update_df_by_dicts_5():
+#     # Test case 5: data is a list of dicts and can partially update rows
+#     df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
+#     data = [{'A': 1, 'B': 6}, {'A': 7, 'B': 8}]
+#     primary_key = 'A'
+#     expected_df = pd.DataFrame({'A': [1, 2], 'B': [6, 4]})
+#
+#     update_df_by_dicts(df, data, primary_key)
+#     assert_frame_equal(df, expected_df)
+#
+#
+# def test_update_df_by_dicts_6():
+#     # Test case 6: primary_key is not in df's columns
+#     df = pd.DataFrame({'A': [1, 2], 'B': [3, 4]})
+#     data = [{'A': 1, 'B': 6}, {'A': 7, 'B': 8}]
+#     primary_key = 'C'
+#
+#     try:
+#         update_df_by_dicts(df, data, primary_key)
+#     except ValueError as e:
+#         assert str(e) == f"Primary key '{primary_key}' not found in DataFrame columns"
 
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -445,12 +445,12 @@ def main():
 
     test_upsert_df_from_right()
 
-    test_update_df_by_dicts_1()
-    test_update_df_by_dicts_2()
-    test_update_df_by_dicts_3()
-    test_update_df_by_dicts_4()
-    test_update_df_by_dicts_5()
-    test_update_df_by_dicts_6()
+    # test_update_df_by_dicts_1()
+    # test_update_df_by_dicts_2()
+    # test_update_df_by_dicts_3()
+    # test_update_df_by_dicts_4()
+    # test_update_df_by_dicts_5()
+    # test_update_df_by_dicts_6()
 
 
 if __name__ == '__main__':
