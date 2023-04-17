@@ -624,7 +624,7 @@ class AnalysisWindow(QWidget):
         reply = QMessageBox.question(self, 'Translation Confirmation',
                                      '将使用有道对未翻译的tag进行翻译，需要联网。机翻精度有限，仅供参考。\n'
                                      '由于采用同步的方式进行网络请求，在翻译过程中界面会无法操作，这是正常现象。\n'
-                                     '由于机制原因，翻译结果会自动保存。对于不完美的翻译可以手动修改。\n\n'
+                                     '翻译结果不会自动保存到数据库，需要通过编辑操作（双击编辑或拖动）来应用更改。\n\n'
                                      '是否继续？', QMessageBox.Yes | QMessageBox.No)
         # If the user clicks no, return
         if reply == QMessageBox.No:
@@ -691,6 +691,13 @@ class AnalysisWindow(QWidget):
     def translate_unknown_tags(self):
         translate_df(self.positive_df, 'tag', 'translate_cn', True)
         translate_df(self.negative_df, 'tag', 'translate_cn', True)
+
+        positive_translate_dict = [{'translate_cn': weight} for weight in self.positive_df['translate_cn']]
+        negative_translate_dict = [{'translate_cn': weight} for weight in self.negative_df['translate_cn']]
+
+        update_df_by_dicts(self.tag_memory_db, positive_translate_dict, 'tag')
+        update_df_by_dicts(self.tag_memory_db, negative_translate_dict, 'tag')
+
         dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [])
         dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [])
 
@@ -719,7 +726,13 @@ class AnalysisWindow(QWidget):
             positive_tag_data_dict = tags_list_to_tag_data(unique_list(self.positive_tags))
             if not self.tag_database.empty:
                 self.positive_df = pd.DataFrame(positive_tag_data_dict)
-                self.positive_df = merge_df_keeping_left_value(self.positive_df, self.tag_database, on='tag')
+                positive_backup_dict = [{'weight': weight} for weight in self.positive_df['weight']]
+
+                self.positive_df = update_df_from_right_value(self.positive_df, self.tag_database, 'tag')
+                self.positive_df = update_df_from_right_value_if_empty(self.positive_df, self.tag_memory_db, 'tag')
+                update_df_by_dicts(self.positive_df, positive_backup_dict, 'tag')
+
+                self.tag_memory_db = concat_df_exclude(self.tag_memory_db, self.positive_df, self.tag_database, 'tag')
             else:
                 self.positive_df = pd.DataFrame(positive_tag_data_dict, columns=DATABASE_FIELDS).fillna('')
             if refresh_ui:
@@ -729,7 +742,13 @@ class AnalysisWindow(QWidget):
             negative_tag_data_dict = tags_list_to_tag_data(unique_list(self.negative_tags))
             if not self.tag_database.empty:
                 self.negative_df = pd.DataFrame(negative_tag_data_dict)
-                self.negative_df = merge_df_keeping_left_value(self.negative_df, self.tag_database, on='tag')
+                negative_backup_dict = [{'weight': weight} for weight in self.negative_df['weight']]
+
+                self.negative_df = update_df_from_right_value(self.negative_df, self.tag_database, 'tag')
+                self.negative_df = update_df_from_right_value_if_empty(self.negative_df, self.tag_memory_db, 'tag')
+                update_df_by_dicts(self.negative_df, negative_backup_dict, 'tag')
+
+                self.tag_memory_db = concat_df_exclude(self.tag_memory_db, self.negative_df, self.tag_database, 'tag')
             else:
                 self.negative_df = pd.DataFrame(negative_tag_data_dict, columns=DATABASE_FIELDS).fillna('')
             if refresh_ui:

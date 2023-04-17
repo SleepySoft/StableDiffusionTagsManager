@@ -121,21 +121,44 @@ def upsert_df_from_right(df_left: pd.DataFrame, df_right: pd.DataFrame, primary_
     return df_merged
 
 
-def update_df_by_dicts(df, data, primary_key):
+def update_df_by_dicts(df: pd.DataFrame, data: dict or [dict], primary_key: str):
     if primary_key not in df.columns:
         raise ValueError(f"Primary key '{primary_key}' not found in DataFrame columns")
 
     if isinstance(data, dict):
         data = [data]
 
-    for row in data:
-        if primary_key not in row:
-            raise ValueError(f"Primary key '{primary_key}' not found in data row")
+    for d in data:
+        if primary_key not in d.keys():
+            raise ValueError(f"Primary key '{primary_key}' not found in data key")
 
         mask = df[primary_key] == row[primary_key]
         for key in row:
             if key in df.columns:
                 df.loc[mask, key] = row[key]
+
+
+def concat_df_exclude(df1: pd.DataFrame, df2: pd.DataFrame, df3: pd.DataFrame, primary_key: str):
+    """
+    Concatenates two DataFrames and excludes rows from the first DataFrame based on a third DataFrame and a primary key.
+
+    Args:
+        df1 (DataFrame): The first DataFrame.
+        df2 (DataFrame): The second DataFrame. If not None, columns that exist in df2 but not in df1 are added to df1.
+        df3 (DataFrame): The third DataFrame. If not None, rows that exist in df3 are removed from df1.
+        primary_key (str): The name of the primary key column. Subsequent operations are based on this column.
+
+    Returns:
+        DataFrame: The modified first DataFrame.
+    """
+    if df2 is not None:
+        df1 = df1.drop_duplicates(subset=primary_key)
+        df2 = df2.drop_duplicates(subset=primary_key)
+        df2 = df2[~df2[primary_key].isin(df1[primary_key])]
+        df1 = pd.concat([df1, df2], axis=0)
+    if df3 is not None:
+        df1 = df1[~df1[primary_key].isin(df3[primary_key])]
+    return df1
 
 
 # ----------------------------------------------------------------------------------------------------------------------

@@ -134,3 +134,7 @@ set all empty field as empty string.
 
 写一系列函数来测试它，叫test_update_df_by_dicts_N，和上面一样考虑各种情况，每种情况一个函数，后缀N为函数的序号。先输出一个函数，我说继续，输出下一个，结束 就说结束。
 
+写一个函数concat_df_exclude，接受4个参数：df1, df2, df3, primary_key，后续操作以primary_key列为基准。
+如果df2不为none，将df2中存在但df1中不存在的列加入df1中。
+如果df3不为none，将df3中存在的行从df1中移除
+
