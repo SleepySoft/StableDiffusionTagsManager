@@ -276,41 +276,23 @@ def dataframe_to_table_widget(
 
 
 class DataFrameRowEditDialog(QDialog):
-    def __init__(self, df: pd.DataFrame, field_name_mapping: dict, unique_field: str, unique_field_value: any):
+    def __init__(self, df: pd.DataFrame, field_name_mapping: dict, edit_row_data: pd.DataFrame, unique_field: str):
         super().__init__()
 
         self.database = df
         self.unique_field = unique_field
-        self.unique_field_value = unique_field_value
-
-        # Filter the dataframe by the unique field name and value
-        filtered_df = df[df[unique_field] == unique_field_value]
-
-        # If the filtered dataframe is empty, create a new row with the unique field value and empty fields
-        if len(filtered_df) == 0:
-            # Create a new dataframe with the same columns as df
-            new_df = pd.DataFrame(columns=df.columns)
-            # Add a new row with the unique field value and empty fields
-            new_row = {}
-            for col in new_df.columns:
-                if col != unique_field:
-                    new_row[col] = ''
-            new_row[unique_field] = unique_field_value
-            new_df = new_df.append(new_row, ignore_index=True)
-            filtered_df = new_df
-
-        # Get the first row of the filtered dataframe
-        row = filtered_df.iloc[0]
+        self.unique_field_value = ''
 
         # Create the editable table widget
-        self.table_widget = QTableWidget(len(row), 2, parent=self)
+        self.table_widget = QTableWidget(len(df.columns), 2, parent=self)
 
         # Set the horizontal header labels for the table
         header_labels = ['Field', 'Value']
         self.table_widget.setHorizontalHeaderLabels(header_labels)
 
         # Fill the table with data from the row
-        for row_idx, (field, value) in enumerate(row.items()):
+        # Update table fields based on main dataframe's fields
+        for row_idx, field in enumerate(df.columns):
             if field in field_name_mapping.keys():
                 display_name = field_name_mapping[field]
             else:
@@ -320,9 +302,17 @@ class DataFrameRowEditDialog(QDialog):
             item.setData(QtCore.Qt.UserRole, field)
             self.table_widget.setItem(row_idx, 0, item)
 
-            item = QTableWidgetItem(str(value))
-            if field == unique_field:
-                item.setFlags(item.flags() & ~Qt.ItemIsEditable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+            if edit_row_data is not None and not edit_row_data.empty and field in edit_row_data.columns:
+                # If the edit_row_data is not empty and unique_field is not empty -> Edit mode
+                # Get the first row of the filtered dataframe
+                item = QTableWidgetItem(edit_row_data.iloc[0][field])
+                if field == unique_field:
+                    self.unique_field_value = edit_row_data.iloc[0][unique_field]
+                if self.unique_field_value.strip() != '':
+                    item.setFlags(item.flags() & ~Qt.ItemIsEditable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+            else:
+                # If not -> Append mode. The unique_field is editable
+                item = QTableWidgetItem(str(''))
             self.table_widget.setItem(row_idx, 1, item)
 
         # Create the OK and Cancel buttons
@@ -682,7 +672,8 @@ class AnalysisWindow(QWidget):
         if item is not None:
             # Get the tag from the selected row
             tag = table.item(row, 0).text()
-            editor = DataFrameRowEditDialog(self.tag_database, DATABASE_SUPPORT_FIELD, 'tag', tag)
+            selected_rows_df = df[df['tag'] == tag]
+            editor = DataFrameRowEditDialog(self.tag_database, DATABASE_SUPPORT_FIELD, selected_rows_df, 'tag')
             result = editor.exec_()
 
             if result == QDialog.Accepted:
