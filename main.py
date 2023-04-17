@@ -485,6 +485,7 @@ class AnalysisWindow(QWidget):
         self.negative_df = pd.DataFrame(columns=DATABASE_FIELDS)
 
         self.tag_database = load_tag_data()
+        self.tag_memory_db = pd.DataFrame(columns=DATABASE_FIELDS)
 
         # Create the root layout
         root_layout = QVBoxLayout(self)

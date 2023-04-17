@@ -129,3 +129,8 @@ merge df_left and df_right left on primary_key, update value from df_right if pr
 set all empty field as empty string.
 
 
+写一个函数，名字叫update_df_by_dicts，接受3个参数：df ad datafram，data as dict or list of dict, primary_key as str. 根据primary_key，使用data里面对应字段更新df中的内容(如果是list of dict则可能更新多行)，如果data有不存在于df的字段则忽略。注意检查df和dict都包含primary_key
+
+
+写一系列函数来测试它，叫test_update_df_by_dicts_N，和上面一样考虑各种情况，每种情况一个函数，后缀N为函数的序号。先输出一个函数，我说继续，输出下一个，结束 就说结束。
+
