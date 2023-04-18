@@ -33,7 +33,7 @@ def youdao_translate(query, from_lang='AUTO', to_lang='AUTO'):
 translate_cache = {}
 
 
-def translate_df(df, text_field, trans_field, use_cache: bool):
+def translate_df(df, text_field, trans_field, use_cache: bool) -> bool:
     """
     Translates the text in the specified text_field of each row of the dataframe using youdao_translate function
     and fills the result to the specified trans_field if the trans_field is empty string.
@@ -62,7 +62,14 @@ def translate_df(df, text_field, trans_field, use_cache: bool):
         return row[trans_field]
 
     if not df.empty:
-        df[trans_field] = df.apply(translate_text, axis=1)
+        try:
+            df[trans_field] = df.apply(translate_text, axis=1)
+            return True
+        except Exception as e:
+            print(e)
+            return False
+        finally:
+            pass
 
 
 def merge_df_keeping_left_value(left: pd.DataFrame, right: pd.DataFrame, on: str):

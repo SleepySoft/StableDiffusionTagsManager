@@ -8,7 +8,7 @@ import datetime
 import pandas as pd
 from collections import OrderedDict
 
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import Qt, QDataStream
 from PyQt5.QtCore import QMimeData
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QPlainTextEdit, \
@@ -42,7 +42,7 @@ for f in ANALYSIS_DISPLAY_FIELD:
     ANALYSIS_SHOW_COLUMNS[f] = DATABASE_SUPPORT_FIELD[f]
 ANALYSIS_SHOW_COLUMNS['weight'] = '权重'
 
-PRESET_TAG_PATH = ['正向效果', '反向效果', '中立效果',
+PRESET_TAG_PATH = ['正向效果', '反向效果', '中立效果', '低价值',
                    '场景/室外', '场景/室内', '场景/幻境', '场景/道具', '场景/光影',
                    '角色/女性', '角色/男性', '角色/福瑞',
                    '脸部/头发', '脸部/眼睛', '脸部/嘴巴', '脸部/表情', '脸部/其它',
@@ -250,7 +250,8 @@ def tags_list_to_tag_data(tags: [str]) -> dict:
 
 def dataframe_to_table_widget(
         table_widget: QTableWidget, dataframe: pd.DataFrame,
-        field_mapping: OrderedDict, extra_headers: [str]):
+        field_mapping: OrderedDict, extra_headers: [str],
+        item_decorator: callable = None):
     # Clear the table
     table_widget.clear()
     table_widget.setRowCount(0)
@@ -271,6 +272,10 @@ def dataframe_to_table_widget(
             item_text = str(dataframe.loc[row, field])
             # print(item_text, end=' ')
             item = QTableWidgetItem(item_text)
+
+            if item_decorator is not None:
+                item_decorator(row, col, item)
+
             table_widget.setItem(row, col, item)
         # print('')
 
@@ -475,7 +480,7 @@ class AnalysisWindow(QWidget):
         self.negative_df = pd.DataFrame(columns=DATABASE_FIELDS)
 
         self.tag_database = load_tag_data()
-        # self.tag_memory_db = pd.DataFrame(columns=DATABASE_FIELDS)
+        self.row_color = QtGui.QColor(255, 255, 255)
 
         # Create the root layout
         root_layout = QVBoxLayout(self)
@@ -680,19 +685,25 @@ class AnalysisWindow(QWidget):
                 self.on_edit_done()
 
     def translate_unknown_tags(self):
-        translate_df(self.positive_df, 'tag', 'translate_cn', True)
-        translate_df(self.negative_df, 'tag', 'translate_cn', True)
-
-        # positive_translate_dict = [{'translate_cn': weight} for weight in self.positive_df['translate_cn']]
-        # negative_translate_dict = [{'translate_cn': weight} for weight in self.negative_df['translate_cn']]
-        #
-        # update_df_by_dicts(self.tag_memory_db, positive_translate_dict, 'tag')
-        # update_df_by_dicts(self.tag_memory_db, negative_translate_dict, 'tag')
-
-        dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [])
-        dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [])
+        if translate_df(self.positive_df, 'tag', 'translate_cn', True) and \
+                translate_df(self.negative_df, 'tag', 'translate_cn', True):
+            dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [], self.df_to_table_decorator)
+            dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [], self.df_to_table_decorator)
+        else:
+            QMessageBox.information(self, 'Translation Fail',
+                                    '翻译失败，可能是网络问题。请确保你的网络可以访问有道翻译。',
+                                    QMessageBox.Ok)
 
     # ---------------------------------------------------------------------------------------------
+
+    def df_to_table_decorator(self, row, col, item):
+        if col == 0:
+            tag = item.text()
+            if tag in self.tag_database['tag'].values:
+                self.row_color = QtGui.QColor(0xCC, 0xFF, 0x99)
+            else:
+                self.row_color = QtGui.QColor(255, 255, 255)
+        item.setBackground(self.row_color)
 
     def on_edit_done(self, new_df: pd.DataFrame = None, refresh_table: bool = True, refresh_tree: bool = True):
         self.on_database_updated(new_df, refresh_tree)
@@ -723,7 +734,7 @@ class AnalysisWindow(QWidget):
             else:
                 self.positive_df = pd.DataFrame(positive_tag_data_dict, columns=DATABASE_FIELDS).fillna('')
             if refresh_ui:
-                dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [])
+                dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [], self.df_to_table_decorator)
 
         if negative:
             negative_tag_data_dict = tags_list_to_tag_data(unique_list(self.negative_tags))
@@ -735,7 +746,7 @@ class AnalysisWindow(QWidget):
             else:
                 self.negative_df = pd.DataFrame(negative_tag_data_dict, columns=DATABASE_FIELDS).fillna('')
             if refresh_ui:
-                dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [])
+                dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [], self.df_to_table_decorator)
 
     def save_database(self):
         backup_file_safe(PUBLIC_DATABASE, BACKUP_LIMIT)
