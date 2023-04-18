@@ -21,8 +21,10 @@ PUBLIC_DATABASE = 'public.csv'
 PRIVATE_DATABASE = 'private.csv'
 BACKUP_LIMIT = 20
 
+PRIMARY_KEY = 'tag'
+
 DATABASE_SUPPORT_FIELD = OrderedDict([
-    ('tag', '标签'),
+    (PRIMARY_KEY, '标签'),
     ('path', '功能分组'),
     ('value', '标签价值'),
     ('translate_cn', '翻译'),
@@ -35,7 +37,7 @@ DATABASE_SUPPORT_FIELD = OrderedDict([
 
 DATABASE_FIELDS = list(DATABASE_SUPPORT_FIELD.keys())
 
-ANALYSIS_DISPLAY_FIELD = ['tag', 'weight', 'path', 'value', 'translate_cn', 'comments']
+ANALYSIS_DISPLAY_FIELD = [PRIMARY_KEY, 'weight', 'path', 'value', 'translate_cn', 'comments']
 
 ANALYSIS_SHOW_COLUMNS = OrderedDict()
 for f in ANALYSIS_DISPLAY_FIELD:
@@ -57,8 +59,6 @@ ANALYSIS_README = """使用说明：
 4. 双击tag列表可以编辑该tag的详细信息，点击确定后该tag信息会更新到数据库。
    注：如果不对新tag进行3或4的操作，则这个tag不会放入数据库。建议只把有用的tag加入数据库。你也可以通过excel修改数据库的csv文件。
 """
-
-
 
 
 # Do not use set to keep list order
@@ -135,13 +135,13 @@ def load_tag_data():
     try:
         df_public = pd.read_csv(PUBLIC_DATABASE)
     except FileNotFoundError:
-        df_public = pd.DataFrame(columns=['tag'])
+        df_public = pd.DataFrame(columns=[PRIMARY_KEY])
 
     # Load private.csv to df_private if it exists
     try:
         df_private = pd.read_csv(PRIVATE_DATABASE)
     except FileNotFoundError:
-        df_private = pd.DataFrame(columns=['tag'])
+        df_private = pd.DataFrame(columns=[PRIMARY_KEY])
 
     # Join df_public and df_private by field "tag" to create df_tags
     df_tags = pd.concat([df_public, df_private])
@@ -243,7 +243,7 @@ def tags_list_to_tag_data(tags: [str]) -> dict:
             index = data_tag.index(raw_tag)
             data_weight[index] = format_float(float(data_weight[index]) * float(tag_weight))
     return {
-        'tag': data_tag,
+        PRIMARY_KEY: data_tag,
         'weight': data_weight
     }
 
@@ -252,6 +252,11 @@ def dataframe_to_table_widget(
         table_widget: QTableWidget, dataframe: pd.DataFrame,
         field_mapping: OrderedDict, extra_headers: [str],
         item_decorator: callable = None):
+
+    # Backup sort information
+    sort_column = table_widget.horizontalHeader().sortIndicatorSection()
+    sort_order = table_widget.horizontalHeader().sortIndicatorOrder()
+
     # Clear the table
     table_widget.clear()
     table_widget.setRowCount(0)
@@ -278,6 +283,9 @@ def dataframe_to_table_widget(
 
             table_widget.setItem(row, col, item)
         # print('')
+
+    # Restore / Keep sort after data update.
+    table_widget.sortByColumn(sort_column, sort_order)
 
 
 class DataFrameRowEditDialog(QDialog):
@@ -313,8 +321,8 @@ class DataFrameRowEditDialog(QDialog):
                 item = QTableWidgetItem(edit_row_data.iloc[0][field])
                 if field == unique_field:
                     self.unique_field_value = edit_row_data.iloc[0][unique_field]
-                if self.unique_field_value.strip() != '':
-                    item.setFlags(item.flags() & ~Qt.ItemIsEditable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
+                    if self.unique_field_value.strip() != '':
+                        item.setFlags(item.flags() & ~Qt.ItemIsEditable | Qt.ItemIsSelectable | Qt.ItemIsEnabled)
             else:
                 # If not -> Append mode. The unique_field is editable
                 item = QTableWidgetItem(str(''))
@@ -425,11 +433,11 @@ class DraggableTree(QTreeWidget):
     def update_tags_path(self, df: pd.DataFrame, tags: [str], _path: str) -> pd.DataFrame or None:
         # Check if any of the tags already exist in the dataframe
         for tag in tags:
-            if tag in df['tag'].values:
-                df.loc[df['tag'] == tag, 'path'] = _path
+            if tag in df[PRIMARY_KEY].values:
+                df.loc[df[PRIMARY_KEY] == tag, 'path'] = _path
             else:
                 # Create a new row with the tags and path
-                new_row = pd.DataFrame({'tag': tags, 'path': [_path] * len(tags)})
+                new_row = pd.DataFrame({PRIMARY_KEY: [tag], 'path': [_path]})
                 # Append the new row to the dataframe
                 df = df.append(new_row, ignore_index=True)
         return df
@@ -480,6 +488,8 @@ class AnalysisWindow(QWidget):
         self.negative_df = pd.DataFrame(columns=DATABASE_FIELDS)
 
         self.tag_database = load_tag_data()
+        self.verify_database()
+
         self.row_color = QtGui.QColor(255, 255, 255)
 
         # Create the root layout
@@ -677,16 +687,16 @@ class AnalysisWindow(QWidget):
         if item is not None:
             # Get the tag from the selected row
             tag = table.item(row, 0).text()
-            selected_rows_df = df[df['tag'] == tag]
-            editor = DataFrameRowEditDialog(self.tag_database, DATABASE_SUPPORT_FIELD, selected_rows_df, 'tag')
+            selected_rows_df = df[df[PRIMARY_KEY] == tag]
+            editor = DataFrameRowEditDialog(self.tag_database, DATABASE_SUPPORT_FIELD, selected_rows_df, PRIMARY_KEY)
             result = editor.exec_()
 
             if result == QDialog.Accepted:
                 self.on_edit_done()
 
     def translate_unknown_tags(self):
-        if translate_df(self.positive_df, 'tag', 'translate_cn', True) and \
-                translate_df(self.negative_df, 'tag', 'translate_cn', True):
+        if translate_df(self.positive_df, PRIMARY_KEY, 'translate_cn', True) and \
+                translate_df(self.negative_df, PRIMARY_KEY, 'translate_cn', True):
             dataframe_to_table_widget(self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [], self.df_to_table_decorator)
             dataframe_to_table_widget(self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [], self.df_to_table_decorator)
         else:
@@ -699,7 +709,7 @@ class AnalysisWindow(QWidget):
     def df_to_table_decorator(self, row, col, item):
         if col == 0:
             tag = item.text()
-            if tag in self.tag_database['tag'].values:
+            if tag in self.tag_database[PRIMARY_KEY].values:
                 self.row_color = QtGui.QColor(0xCC, 0xFF, 0x99)
             else:
                 self.row_color = QtGui.QColor(255, 255, 255)
@@ -721,16 +731,16 @@ class AnalysisWindow(QWidget):
     def rebuild_analysis_table(self, positive: bool, negative: bool, refresh_ui: bool = True):
         # Based on positive_tags and negative_tags
 
-        # Join positive_df with tag_database by 'tag' row. Keep all tag_database columns.
+        # Join positive_df with tag_database by PRIMARY_KEY row. Keep all tag_database columns.
         # If the tag not in tag_database, the columns are empty string. The same to negative_df.
 
         if positive:
             positive_tag_data_dict = tags_list_to_tag_data(unique_list(self.positive_tags))
             if not self.tag_database.empty:
-                positive_translate_df = self.positive_df[['tag', 'translate_cn']].copy()
+                positive_translate_df = self.positive_df[[PRIMARY_KEY, 'translate_cn']].copy()
                 self.positive_df = pd.DataFrame(positive_tag_data_dict)
-                self.positive_df = merge_df_keeping_left_value(self.positive_df, self.tag_database, 'tag')
-                self.positive_df = update_df_from_right_value_if_empty(self.positive_df, positive_translate_df, 'tag')
+                self.positive_df = merge_df_keeping_left_value(self.positive_df, self.tag_database, PRIMARY_KEY)
+                self.positive_df = update_df_from_right_value_if_empty(self.positive_df, positive_translate_df, PRIMARY_KEY)
             else:
                 self.positive_df = pd.DataFrame(positive_tag_data_dict, columns=DATABASE_FIELDS).fillna('')
             if refresh_ui:
@@ -739,10 +749,10 @@ class AnalysisWindow(QWidget):
         if negative:
             negative_tag_data_dict = tags_list_to_tag_data(unique_list(self.negative_tags))
             if not self.tag_database.empty:
-                negative_translate_df = self.negative_df[['tag', 'translate_cn']].copy()
+                negative_translate_df = self.negative_df[[PRIMARY_KEY, 'translate_cn']].copy()
                 self.negative_df = pd.DataFrame(negative_tag_data_dict)
-                self.negative_df = merge_df_keeping_left_value(self.negative_df, self.tag_database, 'tag')
-                self.negative_df = update_df_from_right_value_if_empty(self.negative_df, negative_translate_df, 'tag')
+                self.negative_df = merge_df_keeping_left_value(self.negative_df, self.tag_database, PRIMARY_KEY)
+                self.negative_df = update_df_from_right_value_if_empty(self.negative_df, negative_translate_df, PRIMARY_KEY)
             else:
                 self.negative_df = pd.DataFrame(negative_tag_data_dict, columns=DATABASE_FIELDS).fillna('')
             if refresh_ui:
@@ -751,7 +761,16 @@ class AnalysisWindow(QWidget):
     def save_database(self):
         backup_file_safe(PUBLIC_DATABASE, BACKUP_LIMIT)
         backup_file_safe(PRIVATE_DATABASE, BACKUP_LIMIT)
+        self.verify_database()
         save_tag_data(self.tag_database)
+
+    def verify_database(self):
+        duplicates = self.tag_database.duplicated(subset=[PRIMARY_KEY], keep='first')
+        duplicate_rows = self.tag_database[duplicates]
+        if len(duplicate_rows) > 0:
+            print('Warning: Duplicate row found.')
+            print(duplicate_rows)
+            self.tag_database = self.tag_database.drop_duplicates(subset=[PRIMARY_KEY], keep='first')
 
 
 class MainWindow(QMainWindow):
