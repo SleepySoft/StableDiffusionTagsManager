@@ -70,6 +70,8 @@ def translate_df(df, text_field, trans_field, use_cache: bool) -> bool:
             return False
         finally:
             pass
+    else:
+        return True
 
 
 def merge_df_keeping_left_value(left: pd.DataFrame, right: pd.DataFrame, on: str):
