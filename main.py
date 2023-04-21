@@ -636,10 +636,17 @@ class AnalysisWindow(QWidget):
     def on_positive_table_right_click(self, position):
         # Create a menu
         menu = QMenu()
+
         # Add actions to the menu
         copy_action = QAction('复制选中的正面tag', self)
         copy_action.triggered.connect(lambda: self.do_copy_tag(self.positive_table))
         menu.addAction(copy_action)
+
+        # Add a menu item to the positive table menu
+        save_translation_action = QAction('保存选中的翻译', self)
+        save_translation_action.triggered.connect(lambda: self.do_save_selected_translation(self.positive_table, self.positive_df))
+        menu.addAction(save_translation_action)
+
         # Show the menu at the position of the right click
         menu.exec_(self.positive_table.viewport().mapToGlobal(position))
 
@@ -647,10 +654,17 @@ class AnalysisWindow(QWidget):
     def on_negative_table_right_click(self, position):
         # Create a menu
         menu = QMenu()
+
         # Add actions to the menu
         copy_action = QAction('复制选中的反面tag', self)
         copy_action.triggered.connect(lambda: self.do_copy_tag(self.negative_table))
         menu.addAction(copy_action)
+
+        # Add a menu item to the negative table menu
+        save_translation_action = QAction('保存选中的翻译', self)
+        save_translation_action.triggered.connect(lambda: self.do_save_selected_translation(self.negative_table, self.negative_df))
+        menu.addAction(save_translation_action)
+
         # Show the menu at the position of the right click
         menu.exec_(self.negative_table.viewport().mapToGlobal(position))
 
@@ -713,6 +727,10 @@ class AnalysisWindow(QWidget):
                 
         self.tree.expandAll()
 
+    def get_selectd_tags(self, table: QTableWidget) -> [str]:
+        selected_tags = [table.item(row.row(), 0).text() for row in table.selectionModel().selectedRows()]
+        return selected_tags
+
     def do_edit_item(self, table: QTableWidget, row, df):
         item = table.item(row, 0)
         if item is not None:
@@ -727,14 +745,25 @@ class AnalysisWindow(QWidget):
 
     def do_copy_tag(self, table: QTableWidget):
         # Get the selected row's first column values as a list
-        selected_rows = [table.item(row.row(), 0).text() for row in table.selectionModel().selectedRows()]
+        selected_tags = self.get_selectd_tags(table)
 
         # Join the list by ','
-        joined_string = ','.join(selected_rows)
+        joined_string = ','.join(selected_tags)
 
         # Copy the joined string to clipboard
         clipboard = QApplication.clipboard()
         clipboard.setText(joined_string)
+
+    def do_save_selected_translation(self, table: QTableWidget, df: pd.DataFrame):
+        # Get the selected tags
+        selected_tags = self.get_selectd_tags(table)
+
+        # Select the 'tag' and 'translate_cn' columns where 'tag' is in selected_tags
+        selected_df = df.loc[df['tag'].isin(selected_tags), [PRIMARY_KEY, 'translate_cn']]
+
+        if not selected_df.empty:
+            new_df = upsert_df_from_right(self.tag_database, selected_df, PRIMARY_KEY)
+            self.on_database_updated(new_df, False)
 
     def translate_unknown_tags(self):
         if translate_df(self.positive_df, PRIMARY_KEY, 'translate_cn', True) and \

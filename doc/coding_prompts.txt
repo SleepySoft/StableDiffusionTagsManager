@@ -149,3 +149,10 @@ add a function named do_copy_tag, accept a parameter as TableWidget. Get the val
 add a menu item named '复制选中的tag'. when this menu item being clicked. Call do_copy_tag with the table.
 
 
+add a function named do_save_selected_translation, accept a parameter as TableWidget, a parameter df as DataFrame. 
+call get_selectd_tags to get a seleted_tag list. select columns 'tag' and 'translate_cn' as a new dataframe, which 'tag' field value in seleted_tag.
+
+
+add a menu item named '保存选中的翻译'. when this menu item being clicked. Call do_save_selected_translation with positive table and dataframe.
+add a menu item named '保存选中的翻译'. when this menu item being clicked. Call do_save_selected_translation with negitave table and dataframe.
+
