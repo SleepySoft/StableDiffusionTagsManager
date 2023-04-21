@@ -138,3 +138,14 @@ set all empty field as empty string.
 如果df2不为none，将df2中存在但df1中不存在的列加入df1中。
 如果df3不为none，将df3中存在的行从df1中移除
 
+
+
+add right click handling to both table and when right click, pop up a menu. The menu content TBD.
+
+
+add a function named do_copy_tag, accept a parameter as TableWidget. Get the values of selected row's first column as list. And join them by ','. Copy the joined string to clip board.
+
+
+add a menu item named '复制选中的tag'. when this menu item being clicked. Call do_copy_tag with the table.
+
+

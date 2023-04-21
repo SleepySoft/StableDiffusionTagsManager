@@ -13,7 +13,7 @@ from PyQt5.QtCore import Qt, QDataStream
 from PyQt5.QtCore import QMimeData
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QPlainTextEdit, \
     QGroupBox, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QAbstractItemView, QDialog, QPushButton, \
-    QDialogButtonBox, QCheckBox, QMessageBox
+    QDialogButtonBox, QCheckBox, QMessageBox, QMenu, QAction
 
 from df_utility import *
 
@@ -607,7 +607,16 @@ class AnalysisWindow(QWidget):
         # Connect the on_negative_table_double_click function to the cellDoubleClicked signal of self.negative_table
         self.negative_table.cellDoubleClicked.connect(self.on_negative_table_double_click)
 
+        # Add right click handling to the positive table
+        self.positive_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.positive_table.customContextMenuRequested.connect(self.on_positive_table_right_click)
+
+        # Add right click handling to the negative table
+        self.negative_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.negative_table.customContextMenuRequested.connect(self.on_negative_table_right_click)
+
         self.update_tag_path_tree()
+        
 
     # Define a function to be called when the text in self.text_edit changes
     def on_prompt_edit(self):
@@ -622,6 +631,28 @@ class AnalysisWindow(QWidget):
     # Define a function to be called when a cell in the negative table is double clicked
     def on_negative_table_double_click(self, row, column):
         self.do_edit_item(self.negative_table, row, self.negative_df)
+
+    # Define a function to be called when the positive table is right clicked
+    def on_positive_table_right_click(self, position):
+        # Create a menu
+        menu = QMenu()
+        # Add actions to the menu
+        copy_action = QAction('复制选中的正面tag', self)
+        copy_action.triggered.connect(lambda: self.do_copy_tag(self.positive_table))
+        menu.addAction(copy_action)
+        # Show the menu at the position of the right click
+        menu.exec_(self.positive_table.viewport().mapToGlobal(position))
+
+    # Define a function to be called when the negative table is right clicked
+    def on_negative_table_right_click(self, position):
+        # Create a menu
+        menu = QMenu()
+        # Add actions to the menu
+        copy_action = QAction('复制选中的反面tag', self)
+        copy_action.triggered.connect(lambda: self.do_copy_tag(self.negative_table))
+        menu.addAction(copy_action)
+        # Show the menu at the position of the right click
+        menu.exec_(self.negative_table.viewport().mapToGlobal(position))
 
     # Define a function to be called when the translate button is clicked
     def on_button_translate(self):
@@ -693,6 +724,17 @@ class AnalysisWindow(QWidget):
 
             if result == QDialog.Accepted:
                 self.on_edit_done()
+
+    def do_copy_tag(self, table: QTableWidget):
+        # Get the selected row's first column values as a list
+        selected_rows = [table.item(row.row(), 0).text() for row in table.selectionModel().selectedRows()]
+
+        # Join the list by ','
+        joined_string = ','.join(selected_rows)
+
+        # Copy the joined string to clipboard
+        clipboard = QApplication.clipboard()
+        clipboard.setText(joined_string)
 
     def translate_unknown_tags(self):
         if translate_df(self.positive_df, PRIMARY_KEY, 'translate_cn', True) and \
