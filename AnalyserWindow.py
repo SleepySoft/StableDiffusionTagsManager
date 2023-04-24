@@ -20,6 +20,7 @@ class AnalyserWindow(QWidget):
         super().__init__()
 
         self.tag_manager = tag_manager
+        # self.tag_manager.register_database_observer(self)
 
         self.positive_tags = []
         self.negative_tags = []
@@ -71,7 +72,7 @@ class AnalyserWindow(QWidget):
         # Create the multiple column table for the positive group
         self.positive_table = CustomTableWidget(parent=self)
         self.positive_table.setColumnCount(2)
-        self.positive_table.setRowCount(5)
+        self.positive_table.setRowCount(0)
         positive_group_layout = QVBoxLayout()
         positive_group_layout.addWidget(self.positive_table)
         self.positive_group.setLayout(positive_group_layout)
@@ -154,6 +155,9 @@ class AnalyserWindow(QWidget):
 
         self.update_tag_path_tree()
 
+    def on_widget_activated(self):
+        pass
+
     # Define a function to be called when the text in self.text_edit changes
     def on_prompt_edit(self):
         # Call parse_prompts with the input of self.text_edit
@@ -221,50 +225,8 @@ class AnalyserWindow(QWidget):
 
         self.translate_unknown_tags()
 
-    # def on_check_group(self):
-    #     self.show_in_group = self.group_check_button.isChecked()
-    #     self.rebuild_analysis_table(True, True, True)
-
     def update_tag_path_tree(self):
-        # Clear the tree
-        self.tree.clear()
-
-        # Get unique path values from tag_database
-        unique_paths = unique_list(PRESET_TAG_PATH + list(self.tag_manager.get_database()['path'].unique()))
-
-        # Loop through each unique path
-        for path in unique_paths:
-            if path.strip() == '':
-                continue
-
-            # Split the path into its individual parts
-            parts = path.split('/')
-
-            # Start at the root of the tree
-            current_item = self.tree.invisibleRootItem()
-
-            # Loop through each part of the path
-            for part in parts:
-                part = part.strip()
-                if part == '':
-                    continue
-
-                # Check if the current part already exists as a child of the current item
-                child_item = None
-                for i in range(current_item.childCount()):
-                    if current_item.child(i).text(0) == part:
-                        child_item = current_item.child(i)
-                        break
-
-                # If the current part does not exist as a child of the current item, create a new item for it
-                if child_item is None:
-                    child_item = QTreeWidgetItem([part])
-                    current_item.addChild(child_item)
-
-                # Set the current item to be the child item for the next iteration of the loop
-                current_item = child_item
-
-        self.tree.expandAll()
+        TagManager.update_tag_path_tree(self.tree, self.tag_manager.get_database(), PRESET_TAG_PATH)
 
     def get_selectd_tags(self, table: QTableWidget) -> [str]:
         selected_tags = [table.item(row.row(), 0).text() for row in table.selectionModel().selectedRows()]
@@ -372,3 +334,6 @@ class AnalyserWindow(QWidget):
             if refresh_ui:
                 TagManager.dataframe_to_table_widget(
                     self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [], self.df_to_table_decorator)
+
+    def on_database_changed(self):
+        pass

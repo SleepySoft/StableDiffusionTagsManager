@@ -161,3 +161,11 @@ Add a widget named GenerateWindow. The root layout is horizon line layout.
 Left is group view named "Group" wraps a DraggableTree, weight 30%.
 Center is a group view named "Tags" wraps a CustomTableWidget, weight 40%.
 Right is a vertical layout, weight 40%. The top part is a group view named 'Filter', weight 30%. Then a group view named 'Positive' wraps a multiple line text editor. Then a group view named 'Negative' wraps a multiple line text editor
+
+
+add a tree node click handler to get which node is clicked.
+
+
+df is a dataframe, full_path is a str
+if includes_sub_path is true, filter df by 'path' value includes full_path else filter df by 'path' value equals full_path
+

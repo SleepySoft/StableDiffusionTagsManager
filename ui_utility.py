@@ -2,7 +2,7 @@ import pandas as pd
 
 from PyQt5.QtCore import Qt, QMimeData
 from PyQt5.QtWidgets import QVBoxLayout, QTableWidget, QTableWidgetItem, QTreeWidget, QAbstractItemView, QDialog, \
-    QPushButton, QDialogButtonBox
+    QPushButton, QDialogButtonBox, QTreeWidgetItem
 
 from TagManager import PRIMARY_KEY
 
@@ -103,6 +103,15 @@ class DraggableTree(QTreeWidget):
         self.setDragEnabled(True)
         self.setDragDropMode(QAbstractItemView.DragDrop)
 
+    def get_node_path(self, item: QTreeWidgetItem) -> str:
+        # Calculate the full path from root to current node
+        path = []
+        while item is not None:
+            path.insert(0, item.text(0))
+            item = item.parent()
+        full_path = '/'.join(path)
+        return full_path
+
     def dragEnterEvent(self, event):
         # Get the mime data from the event
         mime_data = event.mimeData()
@@ -138,15 +147,9 @@ class DraggableTree(QTreeWidget):
             if len(selected_data) > 0:
                 # Get the tree node it dropped on
                 current_item = self.itemAt(event.pos())
-                # Calculate the full path from root to current node
-                path = []
-                while current_item is not None:
-                    path.insert(0, current_item.text(0))
-                    current_item = current_item.parent()
-                full_path = '/'.join(path)
+                full_path = self.get_node_path(current_item)
 
                 df = self.update_tags_path(self.database, selected_data, full_path)
-
                 self.on_operation_done(df, refresh_tree=False)
 
     def update_tags_path(self, df: pd.DataFrame, tags: [str], _path: str) -> pd.DataFrame or None:

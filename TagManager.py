@@ -26,6 +26,7 @@ class TagManager:
     def __init__(self, public_db: str, private_db: str, backup_limit: int):
         self.__public_db = public_db
         self.__private_db = private_db
+        self.__database_observers = []
         self.__backup_limit = backup_limit
         self.__tag_database = TagManager.load_tag_data(public_db, private_db)
         self.__verify_database()
@@ -45,6 +46,17 @@ class TagManager:
         self.__verify_database()
         if save:
             self.save_database()
+        for ob in self.__database_observers:
+            ob.on_database_changed()
+
+    def register_database_observer(self, ob):
+        """
+        The observer should support following functions:
+            def on_database_changed()
+        :param ob: Observer
+        :return:
+        """
+        self.__database_observers.append(ob)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -55,6 +67,7 @@ class TagManager:
             print('Warning: Duplicate row found.')
             print(duplicate_rows)
             self.__tag_database = self.__tag_database.drop_duplicates(subset=[PRIMARY_KEY], keep='first')
+        self.__tag_database = self.__tag_database.reset_index()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -218,3 +231,49 @@ class TagManager:
 
         # Restore / Keep sort after data update.
         table_widget.sortByColumn(sort_column, sort_order)
+
+    @staticmethod
+    def update_tag_path_tree(tree_widget, dataframe: pd.DataFrame, preset_path: list):
+        from PyQt5.QtWidgets import QTreeWidget, QTreeWidgetItem
+
+        tree_widget: QTreeWidget
+
+        # Clear the tree
+        tree_widget.clear()
+
+        # Get unique path values from tag_database
+        unique_paths = unique_list(preset_path + list(dataframe['path'].unique()))
+
+        # Loop through each unique path
+        for path in unique_paths:
+            if path.strip() == '':
+                continue
+
+            # Split the path into its individual parts
+            parts = path.split('/')
+
+            # Start at the root of the tree
+            current_item = tree_widget.invisibleRootItem()
+
+            # Loop through each part of the path
+            for part in parts:
+                part = part.strip()
+                if part == '':
+                    continue
+
+                # Check if the current part already exists as a child of the current item
+                child_item = None
+                for i in range(current_item.childCount()):
+                    if current_item.child(i).text(0) == part:
+                        child_item = current_item.child(i)
+                        break
+
+                # If the current part does not exist as a child of the current item, create a new item for it
+                if child_item is None:
+                    child_item = QTreeWidgetItem([part])
+                    current_item.addChild(child_item)
+
+                # Set the current item to be the child item for the next iteration of the loop
+                current_item = child_item
+
+        tree_widget.expandAll()

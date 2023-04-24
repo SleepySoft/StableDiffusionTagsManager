@@ -11,9 +11,13 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         self.tag_manager = TagManager(PUBLIC_DATABASE, PRIVATE_DATABASE, BACKUP_LIMIT)
+
         self.tabs = QTabWidget()
+        self.tabs.currentChanged.connect(self.on_tab_changed)
+
         self.analysis_tab = AnalyserWindow(self.tag_manager)
         self.generate_tab = GenerateWindow(self.tag_manager)
+
         self.init_ui()
 
     def init_ui(self):
@@ -22,6 +26,12 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.tabs)
         self.resize(1280, 800)
         self.setWindowTitle('Stable Diffusion Tag 分析管理 - Sleepy')
+
+    def on_tab_changed(self, index):
+        if index == 0:
+            self.analysis_tab.on_widget_activated()
+        else:
+            self.generate_tab.on_widget_activated()
 
 
 if __name__ == '__main__':
