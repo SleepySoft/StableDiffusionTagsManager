@@ -13,7 +13,7 @@ from defines import ANALYSIS_README, PRESET_TAG_PATH, ANALYSIS_SHOW_COLUMNS, GEN
 from df_utility import *
 from TagManager import *
 from app_utility import *
-from ui_utility import CustomTableWidget, DraggableTree, DataFrameRowEditDialog
+from ui_utility import CustomTableWidget, DraggableTree, DataFrameRowEditDialog, CustomPlainTextEdit
 
 
 class GenerateWindow(QMainWindow):
@@ -76,7 +76,7 @@ class GenerateWindow(QMainWindow):
         # Create the group view named "Positive" that wraps a multiple line text editor
         positive_view = QGroupBox("Positive")
         positive_view_layout = QVBoxLayout()
-        positive_text_editor = QPlainTextEdit()
+        positive_text_editor = CustomPlainTextEdit()
         positive_view_layout.addWidget(positive_text_editor)
         positive_view.setLayout(positive_view_layout)
         right_layout.addWidget(positive_view, 50)
@@ -84,7 +84,7 @@ class GenerateWindow(QMainWindow):
         # Create the group view named "Negative" that wraps a multiple line text editor
         negative_view = QGroupBox("Negative")
         negative_view_layout = QVBoxLayout()
-        negative_text_editor = QPlainTextEdit()
+        negative_text_editor = CustomPlainTextEdit()
         negative_view_layout.addWidget(negative_text_editor)
         negative_view.setLayout(negative_view_layout)
         right_layout.addWidget(negative_view, 30)
@@ -104,7 +104,7 @@ class GenerateWindow(QMainWindow):
         self.refresh_ui()
 
     def on_edit_done(self, new_df: pd.DataFrame = None, refresh_table: bool = True, refresh_tree: bool = True):
-        pass
+        self.refresh_ui()
 
     def on_tree_click(self, item: QTreeWidgetItem):
         df = self.tag_manager.get_database()
@@ -120,10 +120,19 @@ class GenerateWindow(QMainWindow):
 
         self.refresh_table()
 
-    def on_tag_table_right_click(self):
-        pass
+    def on_tag_table_double_click(self, row, column):
+        item = self.tag_table.item(row, 0)
+        if item is not None:
+            # Get the tag from the selected row
+            tag = self.tag_table.item(row, 0).text()
+            selected_rows_df = self.display_tag[self.display_tag[PRIMARY_KEY] == tag]
+            editor = DataFrameRowEditDialog(self.tag_manager.get_database(), DATABASE_SUPPORT_FIELD, selected_rows_df, PRIMARY_KEY)
+            result = editor.exec_()
 
-    def on_tag_table_double_click(self):
+            if result == QDialog.Accepted:
+                self.on_edit_done()
+
+    def on_tag_table_right_click(self, position):
         pass
 
     def refresh_ui(self):

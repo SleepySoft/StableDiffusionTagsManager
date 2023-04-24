@@ -1,8 +1,9 @@
 import pandas as pd
 
 from PyQt5.QtCore import Qt, QMimeData
+from PyQt5.QtGui import QDrag
 from PyQt5.QtWidgets import QVBoxLayout, QTableWidget, QTableWidgetItem, QTreeWidget, QAbstractItemView, QDialog, \
-    QPushButton, QDialogButtonBox, QTreeWidgetItem
+    QPushButton, QDialogButtonBox, QTreeWidgetItem, QPlainTextEdit
 
 from TagManager import PRIMARY_KEY
 
@@ -183,7 +184,7 @@ class DraggableTree(QTreeWidget):
 class CustomTableWidget(QTableWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setAcceptDrops(True)
+        # self.setAcceptDrops(True)
         self.setDragEnabled(True)
         self.setDragDropMode(QAbstractItemView.DragDrop)
 
@@ -192,8 +193,51 @@ class CustomTableWidget(QTableWidget):
         selected_data = []
         for index in indexes:
             if index.column() == 0:
-                selected_data.append(index.text())
+                item = self.item(index.row(), index.column())
+                selected_data.append(item.text())
         # Create a mime data object and set the data
         mime_data = QMimeData()
         mime_data.setData('text/plain', str(selected_data).encode())
         return mime_data
+
+    # startDrag方法的supportedActions参数是一个标志，它指定了拖放操作期间支持的操作。
+    # 这些操作可以是Qt.CopyAction、Qt.MoveAction、Qt.LinkAction或它们的组合。
+    # 例如，如果您希望拖放操作仅支持复制操作，则可以将supportedActions参数设置为Qt.CopyAction。
+    #
+    # 在之前给您提供的示例代码中，我们没有使用supportedActions参数，而是直接在调用exec_方法时将默认操作设置为Qt.CopyAction。
+    # 这样，无论拖放操作期间支持哪些操作，都会使用复制操作作为默认操作，从而防止删除表格中的数据。
+
+    def startDrag(self, supportedActions):
+        drag = QDrag(self)
+        drag.setMimeData(self.mimeData(self.selectedIndexes()))
+        # Set the default action to CopyAction to prevent deleting the data
+        drag.exec_(Qt.CopyAction)
+
+
+class CustomPlainTextEdit(QPlainTextEdit):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAcceptDrops(True)
+
+    def dropEvent(self, event):
+        # Get the drop data
+        mime_data = event.mimeData()
+        if mime_data.hasFormat('text/plain'):
+            # Get the data as bytes and convert to string
+            data = bytes(mime_data.data('text/plain')).decode()
+            # Convert the string back to a list
+            selected_data = [tag.strip() for tag in eval(data) if len(tag.strip()) > 0]
+            # Join the values with a comma separator and set the text
+            tags_text = ', '.join(selected_data)
+
+            current_text = self.toPlainText().rstrip()
+            if len(current_text) > 0 and current_text[-1] != ',':
+                # Add a comma and the new text
+                new_text = current_text + ', ' + tags_text
+            else:
+                # Add the new text
+                new_text = current_text + tags_text
+            # Set the new text
+            self.setPlainText(new_text)
+
+            event.acceptProposedAction()
