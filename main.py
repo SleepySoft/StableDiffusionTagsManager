@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget
 
 from TagManager import TagManager
 from AnalyserWindow import AnalyserWindow
+from GenerateWindow import GenerateWindow
 from defines import PUBLIC_DATABASE, PRIVATE_DATABASE, BACKUP_LIMIT
 
 
@@ -12,7 +13,7 @@ class MainWindow(QMainWindow):
         self.tag_manager = TagManager(PUBLIC_DATABASE, PRIVATE_DATABASE, BACKUP_LIMIT)
         self.tabs = QTabWidget()
         self.analysis_tab = AnalyserWindow(self.tag_manager)
-        self.generate_tab = QWidget()
+        self.generate_tab = GenerateWindow(self.tag_manager)
         self.init_ui()
 
     def init_ui(self):

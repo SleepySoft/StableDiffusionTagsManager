@@ -157,7 +157,7 @@ add a menu item named '保存选中的翻译'. when this menu item being clicked
 add a menu item named '保存选中的翻译'. when this menu item being clicked. Call do_save_selected_translation with negitave table and dataframe.
 
 
-Add a widget named GeneratorWindows. The root layout is horizon line layout.
-The left is group view named "Group" wraps a DraggableTree, weight 30%.
-The center is a group view named "Tags" wraps a DraggableTree, weight 40%.
-The right is a vertical layout. The top part is a group view named 'Filter', weight 30%. Then a group view named 'Positive' wraps a multiple line text editor. Then a group view named 'Negative' wraps a multiple line text editor
+Add a widget named GenerateWindow. The root layout is horizon line layout.
+Left is group view named "Group" wraps a DraggableTree, weight 30%.
+Center is a group view named "Tags" wraps a CustomTableWidget, weight 40%.
+Right is a vertical layout, weight 40%. The top part is a group view named 'Filter', weight 30%. Then a group view named 'Positive' wraps a multiple line text editor. Then a group view named 'Negative' wraps a multiple line text editor
