@@ -133,7 +133,17 @@ class GenerateWindow(QMainWindow):
                 self.on_edit_done()
 
     def on_tag_table_right_click(self, position):
-        pass
+        # Create a menu
+        menu = QMenu()
+
+        # Add a menu item to the positive table menu
+        translation_action = QAction('翻译选中的Tag（如果当前没翻译）', self)
+        translation_action.triggered.connect(
+            lambda: self.do_translation_action())
+        menu.addAction(translation_action)
+
+        # Show the menu at the position of the right click
+        menu.exec_(self.tag_table.viewport().mapToGlobal(position))
 
     def refresh_ui(self):
         self.refresh_tree()
@@ -145,3 +155,11 @@ class GenerateWindow(QMainWindow):
     def refresh_table(self):
         TagManager.dataframe_to_table_widget(self.tag_table, self.display_tag, GENERATE_SHOW_COLUMNS, [])
 
+    def do_translation_action(self):
+        # Get the selected tags
+        selected_tags = self.tag_table.get_selected_row_field_value(0)
+
+        selected_df = self.display_tag.loc[self.display_tag['tag'].isin(selected_tags)]
+        if translate_df(selected_df, PRIMARY_KEY, 'translate_cn', True):
+            update_df_from_right_value_if_empty(self.display_tag, selected_df, PRIMARY_KEY)
+            self.refresh_table()

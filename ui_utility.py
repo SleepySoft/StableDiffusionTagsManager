@@ -188,6 +188,10 @@ class CustomTableWidget(QTableWidget):
         self.setDragEnabled(True)
         self.setDragDropMode(QAbstractItemView.DragDrop)
 
+    def get_selected_row_field_value(self, column_index: int) -> [str]:
+        selected_fields = [self.item(row.row(), column_index).text() for row in self.selectionModel().selectedRows()]
+        return selected_fields
+
     def mimeData(self, indexes):
         # Get the data from the first column of the selected rows
         selected_data = []
