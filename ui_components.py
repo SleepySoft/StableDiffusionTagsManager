@@ -181,7 +181,7 @@ class DraggableTree(QTreeWidget):
                 item.setExpanded(True)
 
 
-class CustomTableWidget(QTableWidget):
+class TagViewTableWidget(QTableWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         # self.setAcceptDrops(True)
@@ -218,6 +218,76 @@ class CustomTableWidget(QTableWidget):
         drag.exec_(Qt.CopyAction)
 
 
+class TagEditTableWidget(QTableWidget):
+    def __init__(self, *args, **kwargs):
+        super(TagEditTableWidget, self).__init__(*args, **kwargs)
+        self.setAcceptDrops(True)
+        self.setDragEnabled(True)
+        self.setDragDropOverwriteMode(False)
+
+    def dropEvent(self, event):
+        if event.source() == self:
+            # Internal move
+            rows = sorted(set(item.row() for item in self.selectedItems()))
+            target_row = self.indexAt(event.pos()).row()
+            if target_row == -1:
+                target_row = self.rowCount()
+            for row in reversed(rows):
+                source_row_adjusted = row + 1 if row > target_row else row
+                if row < target_row:
+                    target_row += 1
+                self.insertRow(target_row)
+                for col in range(self.columnCount()):
+                    self.setItem(target_row, col, self.takeItem(source_row_adjusted, col))
+                self.removeRow(source_row_adjusted)
+            event.accept()
+        else:
+            # External drop
+            data = event.mimeData().data('text/plain').data().decode()
+            tags = eval(data)
+            for tag in tags:
+                if not any(self.item(row, 0).text() == tag for row in range(self.rowCount())):
+                    row = self.rowCount()
+                    self.insertRow(row)
+                    self.setItem(row, 0, QTableWidgetItem(tag))
+            event.accept()
+
+    def dragEnterEvent(self, event):
+        if event.source() == self:
+            event.accept()
+        else:
+            data = event.mimeData().data('text/plain').data().decode()
+            if data.startswith('[') and data.endswith(']'):
+                event.accept()
+            else:
+                event.ignore()
+
+    def dragMoveEvent(self, event):
+        if event.source() == self:
+            event.accept()
+        else:
+            data = event.mimeData().data('text/plain').data().decode()
+            if data.startswith('[') and data.endswith(']'):
+                event.accept()
+            else:
+                event.ignore()
+
+    def mimeData(self, indexes):
+        # Get the data from the first column of the selected rows
+        selected_data = []
+        for index in indexes:
+            if index.column() == 0:
+                item = self.item(index.row(), index.column())
+                selected_data.append(item.text())
+        # Create a mime data object and set the data
+        mime_data = QMimeData()
+        mime_data.setData('text/plain', str(selected_data).encode())
+        return mime_data
+
+    def mimeTypes(self):
+        return ['text/plain']
+
+        
 class CustomPlainTextEdit(QPlainTextEdit):
     def __init__(self, parent=None):
         super().__init__(parent)

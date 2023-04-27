@@ -169,3 +169,27 @@ add a tree node click handler to get which node is clicked.
 df is a dataframe, full_path is a str
 if includes_sub_path is true, filter df by 'path' value includes full_path else filter df by 'path' value equals full_path
 
+
+
+set the list GENERATE_EDIT_FIELDS as the column header of positive table and negative table
+
+
+TagEditTableWidget will accept the mine data from TagViewTableWidget. Get the tag list from it.
+
+
+
+写一个TagEditTableWidget继承自QTableWidget。它可以在控件内拖动以改变行的顺序，但不能将内容拖出控件外。它也可以接受拖入的数据，获取里面的tag字符串，如果表中不存在，则并更新到它的第一列。数据源的minedata参考如下：    def mimeData(self, indexes):
+        # Get the data from the first column of the selected rows
+        selected_data = []
+        for index in indexes:
+            if index.column() == 0:
+                item = self.item(index.row(), index.column())
+                selected_data.append(item.text())
+        # Create a mime data object and set the data
+        mime_data = QMimeData()
+        mime_data.setData('text/plain', str(selected_data).encode())
+        return mime_data
+
+
+
+        

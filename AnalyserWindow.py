@@ -12,7 +12,7 @@ from defines import ANALYSIS_README, PRESET_TAG_PATH, ANALYSIS_SHOW_COLUMNS
 from df_utility import *
 from TagManager import *
 from app_utility import *
-from ui_utility import CustomTableWidget, DraggableTree, DataFrameRowEditDialog
+from ui_components import TagViewTableWidget, DraggableTree, DataFrameRowEditDialog
 
 
 class AnalyserWindow(QWidget):
@@ -70,7 +70,7 @@ class AnalyserWindow(QWidget):
         # Create the group widget for the positive table
         self.positive_group = QGroupBox("Positive", parent=self)
         # Create the multiple column table for the positive group
-        self.positive_table = CustomTableWidget(parent=self)
+        self.positive_table = TagViewTableWidget(parent=self)
         self.positive_table.setColumnCount(2)
         self.positive_table.setRowCount(0)
         positive_group_layout = QVBoxLayout()
@@ -80,7 +80,7 @@ class AnalyserWindow(QWidget):
         # Create the group widget for the negative table
         self.negative_group = QGroupBox("Negative", parent=self)
         # Create the multiple column table for the negative group
-        self.negative_table = CustomTableWidget(parent=self)
+        self.negative_table = TagViewTableWidget(parent=self)
         self.negative_table.setColumnCount(2)
         self.negative_table.setRowCount(5)
         negative_group_layout = QVBoxLayout()

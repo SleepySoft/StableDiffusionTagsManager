@@ -20,6 +20,14 @@ GENERATE_SHOW_COLUMNS = OrderedDict()
 for f in GENERATE_DISPLAY_FIELD:
     GENERATE_SHOW_COLUMNS[f] = DATABASE_SUPPORT_FIELD[f]
 
+GENERATE_EDIT_COLUMNS = OrderedDict()
+GENERATE_EDIT_COLUMNS[PRIMARY_KEY] = '标签'
+GENERATE_EDIT_COLUMNS['weight'] = '权重'
+GENERATE_EDIT_COLUMNS['translate_cn'] = '翻译'
+GENERATE_EDIT_COLUMNS['shuffle'] = '抽签分组'
+
+GENERATE_EDIT_FIELDS = list(GENERATE_EDIT_COLUMNS.keys())
+
 PRESET_TAG_PATH = ['正向效果', '反向效果', '中立效果', '低价值',
                    '场景/室外', '场景/室内', '场景/幻境', '场景/道具', '场景/光影',
                    '角色/女性', '角色/男性', '角色/福瑞',
