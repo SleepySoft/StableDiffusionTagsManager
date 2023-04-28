@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from functools import partial
 
 import pandas as pd
@@ -221,12 +222,12 @@ class TagViewTableWidget(QTableWidget):
 
 
 class TagEditTableWidget(QTableWidget):
-    def __init__(self, tag_manager: TagManager, fields: dict, *args, **kwargs):
+    def __init__(self, tag_manager: TagManager, fields: OrderedDict, *args, **kwargs):
         super(TagEditTableWidget, self).__init__(*args, **kwargs)
 
         self.tag_manager = tag_manager
         self.filed_declare = fields
-        self.edit_data = pd.DataFrame(columns=list(fields.values()))
+        self.table_editing_data = pd.DataFrame(columns=list(fields.values()))
 
         self.setAcceptDrops(True)
         self.setDragEnabled(True)
@@ -250,43 +251,53 @@ class TagEditTableWidget(QTableWidget):
                 for col in range(self.columnCount()):
                     self.setItem(target_row, col, self.takeItem(source_row_adjusted, col))
                 self.removeRow(source_row_adjusted)
+            self.adjust_order()
             event.accept()
         else:
             # External drop
+
             data = event.mimeData().data('text/plain').data().decode()
             tags = eval(data)
+
             for tag in tags:
-                if not any(self.item(row, 0).text() == tag for row in range(self.rowCount())):
-                    row = self.rowCount()
+                if not any(self.table_editing_data.iloc[:, 0] == tag):
                     trans = self.tag_manager.get_property(tag, 'translate_cn')
-                    self.insertRow(row)
-                    self.setItem(row, 0, QTableWidgetItem(tag))
-                    self.setItem(row, 1, QTableWidgetItem('1'))
-                    self.setItem(row, 2, QTableWidgetItem(trans))
-                    self.setItem(row, 3, QTableWidgetItem(''))
+                    self.table_editing_data = self.table_editing_data.append(pd.DataFrame(
+                        [[tag, 1, trans] + [''] * (len(self.filed_declare) - 2)],
+                        columns=self.table_editing_data.columns))
+
+            # for tag in tags:
+            #     if not any(self.item(row, 0).text() == tag for row in range(self.rowCount())):
+            #         row = self.rowCount()
+            #         trans = self.tag_manager.get_property(tag, 'translate_cn')
+            #         self.insertRow(row)
+            #         self.setItem(row, 0, QTableWidgetItem(tag))
+            #         self.setItem(row, 1, QTableWidgetItem('1'))
+            #         self.setItem(row, 2, QTableWidgetItem(trans))
+            #         self.setItem(row, 3, QTableWidgetItem(''))
                     
-                    plus_button = QPushButton('+')
-                    minus_button = QPushButton('-')
-                    plus_button.clicked.connect(partial(self.handle_button_click, '+', row))
-                    minus_button.clicked.connect(partial(self.handle_button_click, '-', row))
+            #         plus_button = QPushButton('+')
+            #         minus_button = QPushButton('-')
+            #         plus_button.clicked.connect(partial(self.handle_button_click, '+', row))
+            #         minus_button.clicked.connect(partial(self.handle_button_click, '-', row))
 
-                    # plus_button.setFixedSize(20, 20)
-                    # minus_button.setFixedSize(20, 20)
+            #         # plus_button.setFixedSize(20, 20)
+            #         # minus_button.setFixedSize(20, 20)
 
-                    plus_button.setMinimumSize(0, 0)
-                    minus_button.setMinimumSize(0, 0)
+            #         plus_button.setMinimumSize(0, 0)
+            #         minus_button.setMinimumSize(0, 0)
                     
-                    plus_button.setStyleSheet("QPushButton {padding: 0px; margin: 0px; font-size: 12px;}")
-                    minus_button.setStyleSheet("QPushButton {padding: 0px; margin: 0px; font-size: 12px;}")
+            #         plus_button.setStyleSheet("QPushButton {padding: 0px; margin: 0px; font-size: 12px;}")
+            #         minus_button.setStyleSheet("QPushButton {padding: 0px; margin: 0px; font-size: 12px;}")
 
-                    self.setCellWidget(row, len(self.filed_declare), plus_button)
-                    self.setCellWidget(row, len(self.filed_declare) + 1, minus_button)
+            #         self.setCellWidget(row, len(self.filed_declare) + 1, plus_button)
+            #         self.setCellWidget(row, len(self.filed_declare), minus_button)
 
-                    self.resizeColumnToContents(1)
-                    self.resizeColumnToContents(len(self.filed_declare))
-                    self.resizeColumnToContents(len(self.filed_declare) + 1)
-
+            #         self.resizeColumnToContents(1)
+            #         self.resizeColumnToContents(len(self.filed_declare))
+            #         self.resizeColumnToContents(len(self.filed_declare) + 1)
             event.accept()
+        self.update_table()
 
     def dragEnterEvent(self, event):
         if event.source() == self:
@@ -323,20 +334,79 @@ class TagEditTableWidget(QTableWidget):
     def mimeTypes(self):
         return ['text/plain']
 
+    # --------------------------------------------------------------------------------------------
+
     def handle_button_click(self, operation, row):
         tag_item = self.item(row, 0)
         tag = tag_item.text()
         # Pass the tag to handling function with partial
+        # Handle '+' button click
         if operation == '+':
             # Handle '+' button click
-
+            value_item = self.item(row, 1)
+            try:
+                value = float(value_item.text())
+                new_value = value * 1.1
+                value_item.setText(f'{new_value:.2f}')
+            except ValueError:
+                # Invalid number, do nothing
+                pass
         elif operation == '-':
             # Handle '-' button click
-            pass
+            value_item = self.item(row, 1)
+            try:
+                value = float(value_item.text())
+                new_value = value * 0.9
+                value_item.setText(f'{new_value:.2f}')
+            except ValueError:
+                # Invalid number, do nothing
+                pass
         else:
             raise ValueError(f'Invalid operation: {operation}')
-            
-        
+
+    def adjust_order(self):
+        # Get the first column of table itself as tag list
+        tag_list = []
+        for row in range(self.rowCount()):
+            tag_item = self.item(row, 0)
+            tag = tag_item.text()
+            tag_list.append(tag)
+        # Sort the self.table_editing_data by PRIMARY_KEY column in tag list order
+        self.table_editing_data = self.table_editing_data.set_index('PRIMARY_KEY').loc[tag_list].reset_index()
+
+    def update_table(self):
+        TagManager.dataframe_to_table_widget(
+            self, self.table_editing_data, self.filed_declare, self.df_to_table_decorator, ['', ''])
+
+    def df_to_table_decorator(self, row, col, item):
+        pass
+
+    # def table_to_df(self):
+    #     # Create an empty dictionary to store the data
+    #     data_dict = {}
+    #     # Loop through each row in the table
+    #     for row in range(self.rowCount()):
+    #         # Create an empty list to store the row data
+    #         row_data = []
+    #         # Loop through each column in the row
+    #         for col in range(self.columnCount()):
+    #             # Get the item at the current row and column
+    #             item = self.item(row, col)
+    #             # If the item exists, append its text to the row data list
+    #             if item is not None:
+    #                 row_data.append(item.text())
+    #             # Otherwise, append an empty string to the row data list
+    #             else:
+    #                 row_data.append('')
+    #         # Add the row data to the data dictionary with the tag as the key
+    #         data_dict[row_data[0]] = row_data[1:]
+    #     # Convert the data dictionary to a pandas DataFrame
+    #     df = pd.DataFrame.from_dict(data_dict, orient='index', columns=self.filed_declare)
+    #     # Update the table_editing_data attribute with the new DataFrame
+    #     self.table_editing_data = df
+
+
+
 class CustomPlainTextEdit(QPlainTextEdit):
     def __init__(self, parent=None):
         super().__init__(parent)

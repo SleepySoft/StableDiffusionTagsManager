@@ -209,3 +209,16 @@ if the value of the row's column 1 is a valid number.
     when -, update value as its 90%
 else 1
 Only add extra code here. DO NOT write startover.
+
+
+implement table_to_df, rebuild self.table_editing_data. The column follows self.filed_declare, get each rows from table ifself and update cell data to each columns.
+
+
+implement adjust_order, get the first column of table itself as tag list, sort the self.table_editing_data by PRIMARY_KEY column in tag list order.
+
+
+add tags into self.table_editing_data, for each tag:
+tag as the primary key.
+the weight field default to 1
+the translate_cn gets from here: self.tag_manager.get_property(tag, 'translate_cn')
+ohter fields are empty string
