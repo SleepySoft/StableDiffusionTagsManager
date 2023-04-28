@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBo
     QDialogButtonBox, QCheckBox, QMessageBox, QMenu, QAction
 
 from defines import ANALYSIS_README, PRESET_TAG_PATH, ANALYSIS_SHOW_COLUMNS, GENERATE_DISPLAY_FIELD, \
-    GENERATE_SHOW_COLUMNS, GENERATE_EDIT_FIELDS
+    GENERATE_SHOW_COLUMNS, GENERATE_EDIT_FIELDS, GENERATE_EDIT_COLUMNS
 from df_utility import *
 from TagManager import *
 from app_utility import *
@@ -77,7 +77,7 @@ class GenerateWindow(QMainWindow):
         # Create the group view named "Positive" that wraps a multiple line text editor
         positive_view = QGroupBox("Positive")
         positive_view_layout = QVBoxLayout()
-        self.positive_table = TagEditTableWidget()
+        self.positive_table = TagEditTableWidget(self.tag_manager, GENERATE_EDIT_COLUMNS)
         positive_view_layout.addWidget(self.positive_table)
         positive_view.setLayout(positive_view_layout)
         right_layout.addWidget(positive_view, 50)
@@ -85,7 +85,7 @@ class GenerateWindow(QMainWindow):
         # Create the group view named "Negative" that wraps a multiple line text editor
         negative_view = QGroupBox("Negative")
         negative_view_layout = QVBoxLayout()
-        self.negative_table = TagEditTableWidget()
+        self.negative_table = TagEditTableWidget(self.tag_manager, GENERATE_EDIT_COLUMNS)
         negative_view_layout.addWidget(self.negative_table)
         negative_view.setLayout(negative_view_layout)
         right_layout.addWidget(negative_view, 30)
@@ -95,13 +95,6 @@ class GenerateWindow(QMainWindow):
         right_widget = QWidget()
         right_widget.setLayout(right_layout)
         root_layout.addWidget(right_widget, 40)
-
-        # Set the list GENERATE_EDIT_FIELDS as the column header of positive table and negative table
-        self.positive_table.setColumnCount(len(GENERATE_EDIT_FIELDS))
-        self.positive_table.setHorizontalHeaderLabels(GENERATE_EDIT_FIELDS)
-
-        self.negative_table.setColumnCount(len(GENERATE_EDIT_FIELDS))
-        self.negative_table.setHorizontalHeaderLabels(GENERATE_EDIT_FIELDS)
 
         # Set the root layout
         root_widget = QWidget()

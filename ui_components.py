@@ -1,3 +1,5 @@
+from functools import partial
+
 import pandas as pd
 
 from PyQt5.QtCore import Qt, QMimeData
@@ -5,7 +7,7 @@ from PyQt5.QtGui import QDrag
 from PyQt5.QtWidgets import QVBoxLayout, QTableWidget, QTableWidgetItem, QTreeWidget, QAbstractItemView, QDialog, \
     QPushButton, QDialogButtonBox, QTreeWidgetItem, QPlainTextEdit
 
-from TagManager import PRIMARY_KEY
+from TagManager import PRIMARY_KEY, TagManager
 
 
 class DataFrameRowEditDialog(QDialog):
@@ -219,11 +221,19 @@ class TagViewTableWidget(QTableWidget):
 
 
 class TagEditTableWidget(QTableWidget):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, tag_manager: TagManager, fields: dict, *args, **kwargs):
         super(TagEditTableWidget, self).__init__(*args, **kwargs)
+
+        self.tag_manager = tag_manager
+        self.filed_declare = fields
+        self.edit_data = pd.DataFrame(columns=list(fields.values()))
+
         self.setAcceptDrops(True)
         self.setDragEnabled(True)
         self.setDragDropOverwriteMode(False)
+
+        self.setColumnCount(len(fields) + 2)
+        self.setHorizontalHeaderLabels(list(fields.values()) + ['', ''])
 
     def dropEvent(self, event):
         if event.source() == self:
@@ -248,8 +258,34 @@ class TagEditTableWidget(QTableWidget):
             for tag in tags:
                 if not any(self.item(row, 0).text() == tag for row in range(self.rowCount())):
                     row = self.rowCount()
+                    trans = self.tag_manager.get_property(tag, 'translate_cn')
                     self.insertRow(row)
                     self.setItem(row, 0, QTableWidgetItem(tag))
+                    self.setItem(row, 1, QTableWidgetItem('1'))
+                    self.setItem(row, 2, QTableWidgetItem(trans))
+                    self.setItem(row, 3, QTableWidgetItem(''))
+                    
+                    plus_button = QPushButton('+')
+                    minus_button = QPushButton('-')
+                    plus_button.clicked.connect(partial(self.handle_button_click, '+', row))
+                    minus_button.clicked.connect(partial(self.handle_button_click, '-', row))
+
+                    # plus_button.setFixedSize(20, 20)
+                    # minus_button.setFixedSize(20, 20)
+
+                    plus_button.setMinimumSize(0, 0)
+                    minus_button.setMinimumSize(0, 0)
+                    
+                    plus_button.setStyleSheet("QPushButton {padding: 0px; margin: 0px; font-size: 12px;}")
+                    minus_button.setStyleSheet("QPushButton {padding: 0px; margin: 0px; font-size: 12px;}")
+
+                    self.setCellWidget(row, len(self.filed_declare), plus_button)
+                    self.setCellWidget(row, len(self.filed_declare) + 1, minus_button)
+
+                    self.resizeColumnToContents(1)
+                    self.resizeColumnToContents(len(self.filed_declare))
+                    self.resizeColumnToContents(len(self.filed_declare) + 1)
+
             event.accept()
 
     def dragEnterEvent(self, event):
@@ -287,6 +323,19 @@ class TagEditTableWidget(QTableWidget):
     def mimeTypes(self):
         return ['text/plain']
 
+    def handle_button_click(self, operation, row):
+        tag_item = self.item(row, 0)
+        tag = tag_item.text()
+        # Pass the tag to handling function with partial
+        if operation == '+':
+            # Handle '+' button click
+
+        elif operation == '-':
+            # Handle '-' button click
+            pass
+        else:
+            raise ValueError(f'Invalid operation: {operation}')
+            
         
 class CustomPlainTextEdit(QPlainTextEdit):
     def __init__(self, parent=None):

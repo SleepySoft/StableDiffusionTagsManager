@@ -58,6 +58,20 @@ class TagManager:
         """
         self.__database_observers.append(ob)
 
+    def get_property(self, primary_key: str, field: str) -> str:
+        """
+        Get the value of a field for a given primary key from the tag database.
+        If the primary key is not found, return an empty string.
+        :param primary_key: str
+        :param field: str
+        :return: str
+        """
+        try:
+            return self.__tag_database.loc[self.__tag_database[PRIMARY_KEY] == primary_key, field].values[0]
+        except IndexError:
+            return ''
+
+
     # ------------------------------------------------------------------------------------------------------------------
 
     def __verify_database(self):

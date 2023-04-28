@@ -191,5 +191,21 @@ TagEditTableWidget will accept the mine data from TagViewTableWidget. Get the ta
         return mime_data
 
 
+add a function named get_property, accept a primary_key as string and a field as string.
+get the field value of the row from self.__tag_database if primary_key matches. else empty string.
 
-        
+
+add '+' and '-' button at column 4. handle its click function and pass the tag to hadling function with partial.
+Only add extra code here. DO NOT write startover.
+
+
+
+these buttons have to be as small as possible. Without any margin and sourround text tight.
+
+let last 2 rows fits its content.
+
+if the value of the row's column 1 is a valid number.
+    when +, update value as its 110%
+    when -, update value as its 90%
+else 1
+Only add extra code here. DO NOT write startover.
