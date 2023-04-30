@@ -227,7 +227,7 @@ class TagEditTableWidget(QTableWidget):
 
         self.tag_manager = tag_manager
         self.filed_declare = fields
-        self.table_editing_data = pd.DataFrame(columns=list(fields.values()))
+        self.table_editing_data = pd.DataFrame(columns=list(fields.keys()))
 
         self.setAcceptDrops(True)
         self.setDragEnabled(True)
@@ -259,12 +259,14 @@ class TagEditTableWidget(QTableWidget):
             data = event.mimeData().data('text/plain').data().decode()
             tags = eval(data)
 
+            append_rows = []
             for tag in tags:
-                if not any(self.table_editing_data.iloc[:, 0] == tag):
+                if not self.table_editing_data[PRIMARY_KEY].isin([tag]).any():
                     trans = self.tag_manager.get_property(tag, 'translate_cn')
-                    self.table_editing_data = self.table_editing_data.append(pd.DataFrame(
-                        [[tag, 1, trans] + [''] * (len(self.filed_declare) - 2)],
-                        columns=self.table_editing_data.columns))
+                    append_rows.append([tag, 0, trans] + [''] * (len(self.filed_declare) - 3))
+            self.table_editing_data = self.table_editing_data.append(
+                pd.DataFrame(append_rows, columns=self.table_editing_data.columns))
+            self.table_editing_data = self.table_editing_data.reset_index()
 
             # for tag in tags:
             #     if not any(self.item(row, 0).text() == tag for row in range(self.rowCount())):
@@ -339,30 +341,18 @@ class TagEditTableWidget(QTableWidget):
     def handle_button_click(self, operation, row):
         tag_item = self.item(row, 0)
         tag = tag_item.text()
-        # Pass the tag to handling function with partial
-        # Handle '+' button click
-        if operation == '+':
+
+        # Add the weight field by 1 if the PRIMARY_KEY field equals to tag
+        if PRIMARY_KEY in self.table_editing_data.columns:
+            # Pass the tag to handling function with partial
             # Handle '+' button click
-            value_item = self.item(row, 1)
-            try:
-                value = float(value_item.text())
-                new_value = value * 1.1
-                value_item.setText(f'{new_value:.2f}')
-            except ValueError:
-                # Invalid number, do nothing
-                pass
-        elif operation == '-':
-            # Handle '-' button click
-            value_item = self.item(row, 1)
-            try:
-                value = float(value_item.text())
-                new_value = value * 0.9
-                value_item.setText(f'{new_value:.2f}')
-            except ValueError:
-                # Invalid number, do nothing
-                pass
-        else:
-            raise ValueError(f'Invalid operation: {operation}')
+            if operation == '+':
+                self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, 'weight'] += 1
+            elif operation == '-':
+                self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, 'weight'] -= 1
+            else:
+                raise ValueError(f'Invalid operation: {operation}')
+            self.update_row_weight(row)
 
     def adjust_order(self):
         # Get the first column of table itself as tag list
@@ -372,14 +362,61 @@ class TagEditTableWidget(QTableWidget):
             tag = tag_item.text()
             tag_list.append(tag)
         # Sort the self.table_editing_data by PRIMARY_KEY column in tag list order
-        self.table_editing_data = self.table_editing_data.set_index('PRIMARY_KEY').loc[tag_list].reset_index()
+        self.table_editing_data = self.table_editing_data.set_index(PRIMARY_KEY).loc[tag_list].reset_index()
 
     def update_table(self):
         TagManager.dataframe_to_table_widget(
-            self, self.table_editing_data, self.filed_declare, self.df_to_table_decorator, ['', ''])
+            self, self.table_editing_data, self.filed_declare, ['', ''], self.df_to_table_decorator)
 
-    def df_to_table_decorator(self, row, col, item):
-        pass
+        for row in range(self.rowCount()):
+            plus_button = QPushButton('+')
+            minus_button = QPushButton('-')
+
+            plus_button.clicked.connect(partial(self.handle_button_click, '+', row))
+            minus_button.clicked.connect(partial(self.handle_button_click, '-', row))
+
+            plus_button.setMinimumSize(0, 0)
+            minus_button.setMinimumSize(0, 0)
+
+            plus_button.setStyleSheet("QPushButton {padding: 0px; margin: 0px; font-size: 12px;}")
+            minus_button.setStyleSheet("QPushButton {padding: 0px; margin: 0px; font-size: 12px;}")
+
+            self.setCellWidget(row, len(self.filed_declare) + 1, plus_button)
+            self.setCellWidget(row, len(self.filed_declare), minus_button)
+
+            self.resizeColumnToContents(1)
+            self.resizeColumnToContents(len(self.filed_declare))
+            self.resizeColumnToContents(len(self.filed_declare) + 1)
+
+    def df_to_table_decorator(self, row, col, item: QTableWidgetItem):
+        if col == 1:
+            tag_item = self.item(row, 0)
+            tag = tag_item.text()
+            # Find the weight value in dataframe by tag field
+            weight_value = int(self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, 'weight'].values[0])
+            # Format the new_value to a string with 2 decimal places
+            weight_value_str = self.format_weight(weight_value)
+            # Update the weight value to col 2 of table row
+            item.setText(weight_value_str)
+        else:
+            pass
+
+    def update_row_weight(self, row):
+        tag_item = self.item(row, 0)
+        tag = tag_item.text()
+        # Find the weight value in dataframe by tag field
+        weight_value = self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, 'weight'].values[0]
+        weight_value_str = self.format_weight(weight_value)
+        # Update the weight value to col 2 of table row
+        weight_item = QTableWidgetItem(str(weight_value_str))
+        self.setItem(row, 1, weight_item)
+
+    def format_weight(self, weight_level: int) -> str:
+        if weight_level >= 0:
+            weight_value = 1.0 * (1.1 ** weight_level)
+        else:
+            weight_value = 1.0 * (0.9 ** abs(weight_level))
+        return '{:.2f}'.format(weight_value)
 
     # def table_to_df(self):
     #     # Create an empty dictionary to store the data
@@ -404,7 +441,6 @@ class TagEditTableWidget(QTableWidget):
     #     df = pd.DataFrame.from_dict(data_dict, orient='index', columns=self.filed_declare)
     #     # Update the table_editing_data attribute with the new DataFrame
     #     self.table_editing_data = df
-
 
 
 class CustomPlainTextEdit(QPlainTextEdit):

@@ -222,3 +222,9 @@ tag as the primary key.
 the weight field default to 1
 the translate_cn gets from here: self.tag_manager.get_property(tag, 'translate_cn')
 ohter fields are empty string
+
+
+get the first col of table row as tag, find the weight value in dataframe by tag field. Update the weight value to col 2 of table row.
+
+
+if it's the 2nd col, get the first col of table row as tag, get the weight in dataframe. calc 1 * 0.1^weight and update to this col of row.

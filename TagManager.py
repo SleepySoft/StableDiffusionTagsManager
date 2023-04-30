@@ -229,18 +229,21 @@ class TagManager:
         # Set the row count for the table
         table_widget.setRowCount(len(dataframe))
 
-        # Fill the table with data from the dataframe
-        for row in range(len(dataframe)):
-            for col, field in enumerate(field_mapping.keys()):
-                item_text = str(dataframe.loc[row, field])
-                # print(item_text, end=' ')
-                item = QTableWidgetItem(item_text)
+        try:
+            # Fill the table with data from the dataframe
+            for row in range(len(dataframe)):
+                for col, field in enumerate(field_mapping.keys()):
+                    item_text = str(dataframe.loc[row, field])
+                    # print(item_text, end=' ')
+                    item = QTableWidgetItem(item_text)
 
-                if item_decorator is not None:
-                    item_decorator(row, col, item)
+                    if item_decorator is not None:
+                        item_decorator(row, col, item)
 
-                table_widget.setItem(row, col, item)
-            # print('')
+                    table_widget.setItem(row, col, item)
+                # print('')
+        except Exception as e:
+            print(e)
 
         # Restore / Keep sort after data update.
         table_widget.sortByColumn(sort_column, sort_order)
