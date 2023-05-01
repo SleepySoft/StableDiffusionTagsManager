@@ -81,7 +81,8 @@ def merge_df_keeping_left_value(left: pd.DataFrame, right: pd.DataFrame, on: str
     return df
 
 
-def update_df_from_right_value(df_left: pd.DataFrame, df_right: pd.DataFrame, primary_key: str) -> pd.DataFrame:
+def update_df_from_right_value(df_left: pd.DataFrame, df_right: pd.DataFrame,
+                               primary_key: str, update_fields: list or None = None) -> pd.DataFrame:
     assert primary_key in df_left.columns, f"{primary_key} not in df_left columns"
     assert primary_key in df_right.columns, f"{primary_key} not in df_right columns"
 
@@ -89,14 +90,16 @@ def update_df_from_right_value(df_left: pd.DataFrame, df_right: pd.DataFrame, pr
     for col in df_merged.columns:
         if col.endswith(RIGHT_INDICATOR):
             left_col = col[:-len(RIGHT_INDICATOR)]
-            df_merged[left_col] = df_merged[col].where(df_merged[col].notnull(), df_merged[left_col])
+            if (update_fields is None) or (left_col in update_fields):
+                df_merged[left_col] = df_merged[col].where(df_merged[col].notnull(), df_merged[left_col])
             df_merged.drop(col, axis=1, inplace=True)
 
     df_merged.fillna('', inplace=True)
     return df_merged
 
 
-def update_df_from_right_value_if_empty(df_left: pd.DataFrame, df_right: pd.DataFrame, primary_key: str) -> pd.DataFrame:
+def update_df_from_right_value_if_empty(df_left: pd.DataFrame, df_right: pd.DataFrame,
+                                        primary_key: str, update_fields: list or None = None) -> pd.DataFrame:
     assert primary_key in df_left.columns, f"{primary_key} not in df_left columns"
     assert primary_key in df_right.columns, f"{primary_key} not in df_right columns"
 
@@ -104,9 +107,10 @@ def update_df_from_right_value_if_empty(df_left: pd.DataFrame, df_right: pd.Data
     for col in df_merged.columns:
         if col.endswith(RIGHT_INDICATOR):
             left_col = col[:-len(RIGHT_INDICATOR)]
-            df_merged[left_col].mask(
-                df_merged[left_col].isnull() | (df_merged[left_col] == '') | df_merged[left_col].isna(),
-                df_merged[col], inplace=True)
+            if (update_fields is None) or (left_col in update_fields):
+                df_merged[left_col].mask(
+                    df_merged[left_col].isnull() | (df_merged[left_col] == '') | df_merged[left_col].isna(),
+                    df_merged[col], inplace=True)
             df_merged.drop(col, axis=1, inplace=True)
 
     df_merged.fillna('', inplace=True)

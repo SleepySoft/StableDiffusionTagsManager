@@ -130,7 +130,12 @@ class GenerateWindow(QMainWindow):
     def on_widget_activated(self):
         self.refresh_ui()
 
-    def on_edit_done(self, new_df: pd.DataFrame = None, refresh_table: bool = True, refresh_tree: bool = True):
+    def on_edit_done(self):
+        self.tag_manager.inform_database_modified(None, True)
+        translated_df = self.display_tag[[PRIMARY_KEY, 'translate_cn']].copy()
+        self.display_tag = update_df_from_right_value(
+            self.display_tag, self.tag_manager.get_database(), PRIMARY_KEY)
+        self.display_tag = update_df_from_right_value_if_empty(self.display_tag, translated_df, PRIMARY_KEY)
         self.refresh_ui()
 
     def on_tree_click(self, item: QTreeWidgetItem):
@@ -153,7 +158,8 @@ class GenerateWindow(QMainWindow):
             # Get the tag from the selected row
             tag = self.tag_table.item(row, 0).text()
             selected_rows_df = self.display_tag[self.display_tag[PRIMARY_KEY] == tag]
-            editor = DataFrameRowEditDialog(self.tag_manager.get_database(), DATABASE_SUPPORT_FIELD, selected_rows_df, PRIMARY_KEY)
+            editor = DataFrameRowEditDialog(
+                self.tag_manager.get_database(), DATABASE_SUPPORT_FIELD, selected_rows_df, PRIMARY_KEY)
             result = editor.exec_()
 
             if result == QDialog.Accepted:
@@ -168,6 +174,11 @@ class GenerateWindow(QMainWindow):
         translation_action.triggered.connect(
             lambda: self.do_translation_action())
         menu.addAction(translation_action)
+
+        save_translation_action = QAction('保存选中Tag的翻译（如果有）', self)
+        save_translation_action.triggered.connect(
+            lambda: self.save_translation_action())
+        menu.addAction(save_translation_action)
 
         # Show the menu at the position of the right click
         menu.exec_(self.tag_table.viewport().mapToGlobal(position))
@@ -188,5 +199,27 @@ class GenerateWindow(QMainWindow):
 
         selected_df = self.display_tag.loc[self.display_tag['tag'].isin(selected_tags)]
         if translate_df(selected_df, PRIMARY_KEY, 'translate_cn', True):
-            update_df_from_right_value_if_empty(self.display_tag, selected_df, PRIMARY_KEY)
+            self.display_tag = update_df_from_right_value_if_empty(
+                self.display_tag, selected_df, PRIMARY_KEY, ['translate_cn'])
             self.refresh_table()
+
+    def save_translation_action(self):
+        tag_database = self.tag_manager.get_database()
+
+        # Get the selected tags
+        selected_tags = self.tag_table.get_selected_row_field_value(0)
+
+        # Filter the display_tag dataframe to only include rows where the tag is in the selected_tags list
+        selected_df = self.display_tag.loc[self.display_tag[PRIMARY_KEY].isin(selected_tags)]
+
+        if not selected_df.empty:
+            new_df = update_df_from_right_value(tag_database, selected_df, PRIMARY_KEY, ['translate_cn'])
+            new_df = new_df.reset_index(drop=True)
+
+            self.tag_manager.inform_database_modified(new_df, True)
+
+            # Refresh the table to display the updated data
+            self.refresh_table()
+
+
+

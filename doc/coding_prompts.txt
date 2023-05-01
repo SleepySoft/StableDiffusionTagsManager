@@ -228,3 +228,9 @@ get the first col of table row as tag, find the weight value in dataframe by tag
 
 
 if it's the 2nd col, get the first col of table row as tag, get the weight in dataframe. calc 1 * 0.1^weight and update to this col of row.
+
+
+handle del button to delete selected rows
+
+
+update tag_database 'translation_cn' field from self.display_tag if 'translation_cn' field a valid string which PRIMARY_KEY in selected_tags list.

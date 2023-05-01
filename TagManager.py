@@ -39,7 +39,7 @@ class TagManager:
         backup_file_safe(self.__private_db, self.__backup_limit)
         TagManager.save_tag_data(self.__tag_database, self.__public_db, self.__private_db)
 
-    def inform_database_modified(self, new_df: pd.DataFrame, save: bool):
+    def inform_database_modified(self, new_df: pd.DataFrame or None, save: bool):
         if new_df is not None:
             self.__tag_database = new_df
         self.__tag_database = self.__tag_database.reindex().fillna('')
@@ -80,7 +80,11 @@ class TagManager:
             print('Warning: Duplicate row found.')
             print(duplicate_rows)
             self.__tag_database = self.__tag_database.drop_duplicates(subset=[PRIMARY_KEY], keep='first')
-        self.__tag_database = self.__tag_database.reset_index()
+        if 'level_0' in self.__tag_database.columns:
+            print('Warning: Found level_0 column. There may be a missing drop=True '
+                  'parameter in a call to reset_index() somewhere.')
+            self.__tag_database = self.__tag_database.drop('level_0', axis=1)
+        self.__tag_database = self.__tag_database.reset_index(drop=True)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -108,7 +112,7 @@ class TagManager:
 
         # Replace NaN or null values with empty strings
         df_tags = df_tags.fillna('')
-        df_tags = df_tags.reindex()
+        df_tags = df_tags.reset_index(drop=True)
 
         return df_tags
 
