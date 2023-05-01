@@ -54,8 +54,8 @@ class GenerateWindow(QMainWindow):
         self.tag_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tag_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.tag_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.tag_table.setDragEnabled(True)
-        self.tag_table.setDefaultDropAction(Qt.MoveAction)
+        # self.tag_table.setDragEnabled(True)
+        # self.tag_table.setDefaultDropAction(Qt.MoveAction)
 
         self.tag_table.cellDoubleClicked.connect(self.on_tag_table_double_click)
         self.tag_table.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -68,16 +68,29 @@ class GenerateWindow(QMainWindow):
         # Create the right vertical layout
         right_layout = QVBoxLayout()
 
-        # Create the top group view named "Filter"
-        filter_view = QGroupBox("Filter")
+        # Create the top group view named "Action"
+        action_view = QGroupBox("Action")
         filter_view_layout = QVBoxLayout()
-        filter_view.setLayout(filter_view_layout)
-        right_layout.addWidget(filter_view, 20)
+        action_view.setLayout(filter_view_layout)
+        right_layout.addWidget(action_view, 20)
 
         # Create the group view named "Positive" that wraps a multiple line text editor
         positive_view = QGroupBox("Positive")
         positive_view_layout = QVBoxLayout()
+
         self.positive_table = TagEditTableWidget(self.tag_manager, GENERATE_EDIT_COLUMNS)
+
+        self.positive_table.horizontalHeader().setSectionsClickable(True)
+        self.positive_table.horizontalHeader().sectionClicked.connect(self.positive_table.sortByColumn)
+
+        self.positive_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.positive_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.positive_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+        # self.positive_table.cellDoubleClicked.connect(self.on_tag_table_double_click)
+        # self.positive_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        # self.positive_table.customContextMenuRequested.connect(self.on_tag_table_right_click)
+
         positive_view_layout.addWidget(self.positive_table)
         positive_view.setLayout(positive_view_layout)
         right_layout.addWidget(positive_view, 50)
@@ -85,7 +98,20 @@ class GenerateWindow(QMainWindow):
         # Create the group view named "Negative" that wraps a multiple line text editor
         negative_view = QGroupBox("Negative")
         negative_view_layout = QVBoxLayout()
+
         self.negative_table = TagEditTableWidget(self.tag_manager, GENERATE_EDIT_COLUMNS)
+
+        self.negative_table.horizontalHeader().setSectionsClickable(True)
+        self.negative_table.horizontalHeader().sectionClicked.connect(self.negative_table.sortByColumn)
+
+        self.negative_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.negative_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.negative_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+        # self.negative_table.cellDoubleClicked.connect(self.on_tag_table_double_click)
+        # self.negative_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        # self.negative_table.customContextMenuRequested.connect(self.on_tag_table_right_click)
+
         negative_view_layout.addWidget(self.negative_table)
         negative_view.setLayout(negative_view_layout)
         right_layout.addWidget(negative_view, 30)

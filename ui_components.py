@@ -187,13 +187,19 @@ class DraggableTree(QTreeWidget):
 class TagViewTableWidget(QTableWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        # self.setAcceptDrops(True)
         self.setDragEnabled(True)
+        self.setAcceptDrops(False)
         self.setDragDropMode(QAbstractItemView.DragDrop)
 
     def get_selected_row_field_value(self, column_index: int) -> [str]:
         selected_fields = [self.item(row.row(), column_index).text() for row in self.selectionModel().selectedRows()]
         return selected_fields
+
+    def dragEnterEvent(self, event):
+        event.ignore()
+
+    def dragMoveEvent(self, event):
+        event.ignore()
 
     def mimeData(self, indexes):
         # Get the data from the first column of the selected rows
@@ -219,6 +225,9 @@ class TagViewTableWidget(QTableWidget):
         drag.setMimeData(self.mimeData(self.selectedIndexes()))
         # Set the default action to CopyAction to prevent deleting the data
         drag.exec_(Qt.CopyAction)
+
+    def dropEvent(self, event):
+        event.ignore()
 
 
 class TagEditTableWidget(QTableWidget):
