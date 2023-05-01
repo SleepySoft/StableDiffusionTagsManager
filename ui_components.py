@@ -245,6 +245,21 @@ class TagEditTableWidget(QTableWidget):
         self.setColumnCount(len(fields) + 2)
         self.setHorizontalHeaderLabels(list(fields.values()) + ['', ''])
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Delete:
+            rows = sorted(set(item.row() for item in self.selectedItems()))
+            # for row in reversed(rows):
+            #     self.removeRow(row)
+            # self.adjust_order()
+            # Remove the row from the dataframe
+            self.table_editing_data.drop(index=rows, inplace=True)
+            self.table_editing_data.reset_index(drop=True, inplace=True)
+            self.update_table()
+
+            event.accept()
+        else:
+            super().keyPressEvent(event)
+
     def dropEvent(self, event):
         if event.source() == self:
             # Internal move
@@ -275,7 +290,7 @@ class TagEditTableWidget(QTableWidget):
                     append_rows.append([tag, 0, trans] + [''] * (len(self.filed_declare) - 3))
             self.table_editing_data = self.table_editing_data.append(
                 pd.DataFrame(append_rows, columns=self.table_editing_data.columns))
-            self.table_editing_data = self.table_editing_data.reset_index()
+            self.table_editing_data = self.table_editing_data.reset_index(drop=True)
 
             # for tag in tags:
             #     if not any(self.item(row, 0).text() == tag for row in range(self.rowCount())):
@@ -334,7 +349,9 @@ class TagEditTableWidget(QTableWidget):
         # Get the data from the first column of the selected rows
         selected_data = []
         for index in indexes:
-            if index.column() == 0:
+            if index is None:
+                pass
+            elif index.column() == 0:
                 item = self.item(index.row(), index.column())
                 selected_data.append(item.text())
         # Create a mime data object and set the data

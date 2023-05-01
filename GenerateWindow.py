@@ -143,7 +143,7 @@ class GenerateWindow(QMainWindow):
             self.display_tag = df[df['path'].str.startswith(full_path)]
         else:
             self.display_tag = df[df['path'] == full_path]
-        self.display_tag = self.display_tag.reset_index()
+        self.display_tag = self.display_tag.reset_index(drop=True)
 
         self.refresh_table()
 
