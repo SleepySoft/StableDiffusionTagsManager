@@ -139,13 +139,16 @@ class GenerateWindow(QMainWindow):
     def on_widget_activated(self):
         self.refresh_ui()
 
-    def on_edit_done(self):
+    def on_edit_done(self, refresh_tree: bool = False):
         self.tag_manager.inform_database_modified(None, True)
         translated_df = self.display_tag[[PRIMARY_KEY, 'translate_cn']].copy()
         self.display_tag = update_df_from_right_value(
             self.display_tag, self.tag_manager.get_database(), PRIMARY_KEY)
         self.display_tag = update_df_from_right_value_if_empty(self.display_tag, translated_df, PRIMARY_KEY)
-        self.refresh_ui()
+
+        if refresh_tree:
+            self.refresh_tree()
+        self.refresh_table()
 
     def on_tree_click(self, item: QTreeWidgetItem):
         df = self.tag_manager.get_database()
