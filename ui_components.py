@@ -354,6 +354,34 @@ class TagEditTableWidget(QTableWidget):
                 column_name = self.table_editing_data.columns[column_index]
                 self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, column_name] = data
 
+    def generate(self, file_name: str, wildcards_path: str):
+        df_flat_tags = self.table_editing_data[
+            self.table_editing_data['shuffle'].isnull() | (self.table_editing_data['shuffle'] == '')]
+        df_wildcards = self.table_editing_data[
+            self.table_editing_data['shuffle'].notnull() & (self.table_editing_data['shuffle'] != '')]
+
+        wildcards = []
+        for shuffle, group in df_wildcards.groupby('shuffle'):
+            tags = ', '.join(group['tag'])
+            wildcards_file_name = f"{wildcards_path}/{shuffle}.txt"
+            with open(wildcards_file_name, 'w') as f:
+                f.write(tags)
+            wildcards.append(f"__{shuffle}__")
+
+        flat_tags = []
+        for index, row in df_flat_tags.iterrows():
+            tag = row['tag']
+            weight = int(row['weight'])
+            # If the weight is 1, than it's (tag), if 2 than ((tag)) and so on.
+            if weight > 0:
+                tag = f"{'(' * weight}{tag}{')' * weight}"
+            elif weight < 0:
+                tag = f"{'[' * abs(weight)}{tag}{']' * abs(weight)}"
+            flat_tags.append(tag)
+
+        with open(file_name, 'w') as f:
+            f.write(', '.join(wildcards + flat_tags))
+
     # --------------------------------------------------------------------------------------------
 
     def handle_button_click(self, operation, row):
@@ -431,9 +459,9 @@ class TagEditTableWidget(QTableWidget):
 
     def format_weight(self, weight_level: int) -> str:
         if weight_level >= 0:
-            weight_value = 1.0 * (1.1 ** weight_level)
+            weight_value = 1.0 * (1.05 ** weight_level)
         else:
-            weight_value = 1.0 * (0.9 ** abs(weight_level))
+            weight_value = 1.0 * (0.95 ** abs(weight_level))
         return '{:.2f}'.format(weight_value)
 
 

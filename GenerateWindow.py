@@ -71,6 +71,15 @@ class GenerateWindow(QMainWindow):
         # Create the top group view named "Action"
         action_view = QGroupBox("Action")
         action_view_layout = QVBoxLayout()
+
+        # Create a button named "生成"
+        generate_button = QPushButton("生成", self)
+        # Connect the button to the on_generate function
+        generate_button.clicked.connect(self.do_generate)
+        # Add the button to the action_view_layout
+        action_view_layout.addWidget(generate_button)
+
+
         action_view.setLayout(action_view_layout)
         right_layout.addWidget(action_view, 20)
 
@@ -252,6 +261,21 @@ class GenerateWindow(QMainWindow):
 
     def do_remove_shuffle(self, table: TagEditTableWidget):
         table.set_data_by_selected_row(3, '')
+
+    def do_generate(self):
+        if not os.path.exists('wildcards'):
+            os.mkdir('wildcards')
+        self.positive_table.generate('positive.txt', 'wildcards')
+        self.negative_table.generate('negative.txt', 'wildcards')
+
+        # Open positive.txt file
+        os.startfile('positive.txt')
+        
+        # Open negative.txt file
+        os.startfile('negative.txt')
+
+        
+
 
 
 
