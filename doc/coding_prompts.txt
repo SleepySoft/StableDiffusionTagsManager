@@ -234,3 +234,11 @@ handle del button to delete selected rows
 
 
 update tag_database 'translation_cn' field from self.display_tag if 'translation_cn' field a valid string which PRIMARY_KEY in selected_tags list.
+
+
+popup a input dialog for text input and get user's input result. If user input valid string and click OK button, then (mark the entry as TODO) else do nothing
+
+
+
+get the selected row and set the data of dataframe by select rows and specified column index.
+

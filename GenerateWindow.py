@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt, QDataStream
 from PyQt5.QtCore import QMimeData
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QPlainTextEdit, \
     QGroupBox, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QAbstractItemView, QDialog, QPushButton, \
-    QDialogButtonBox, QCheckBox, QMessageBox, QMenu, QAction
+    QDialogButtonBox, QCheckBox, QMessageBox, QMenu, QAction, QInputDialog
 
 from defines import ANALYSIS_README, PRESET_TAG_PATH, ANALYSIS_SHOW_COLUMNS, GENERATE_DISPLAY_FIELD, \
     GENERATE_SHOW_COLUMNS, GENERATE_EDIT_FIELDS, GENERATE_EDIT_COLUMNS
@@ -70,12 +70,12 @@ class GenerateWindow(QMainWindow):
 
         # Create the top group view named "Action"
         action_view = QGroupBox("Action")
-        filter_view_layout = QVBoxLayout()
-        action_view.setLayout(filter_view_layout)
+        action_view_layout = QVBoxLayout()
+        action_view.setLayout(action_view_layout)
         right_layout.addWidget(action_view, 20)
 
         # Create the group view named "Positive" that wraps a multiple line text editor
-        positive_view = QGroupBox("Positive")
+        positive_view = QGroupBox("正向Tag")
         positive_view_layout = QVBoxLayout()
 
         self.positive_table = TagEditTableWidget(self.tag_manager, GENERATE_EDIT_COLUMNS)
@@ -87,16 +87,16 @@ class GenerateWindow(QMainWindow):
         self.positive_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.positive_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
-        # self.positive_table.cellDoubleClicked.connect(self.on_tag_table_double_click)
-        # self.positive_table.setContextMenuPolicy(Qt.CustomContextMenu)
-        # self.positive_table.customContextMenuRequested.connect(self.on_tag_table_right_click)
+        self.positive_table.cellDoubleClicked.connect(self.on_tag_table_double_click)
+        self.positive_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.positive_table.customContextMenuRequested.connect(self.on_positive_table_right_click)
 
         positive_view_layout.addWidget(self.positive_table)
         positive_view.setLayout(positive_view_layout)
         right_layout.addWidget(positive_view, 50)
 
         # Create the group view named "Negative" that wraps a multiple line text editor
-        negative_view = QGroupBox("Negative")
+        negative_view = QGroupBox("反向Tag")
         negative_view_layout = QVBoxLayout()
 
         self.negative_table = TagEditTableWidget(self.tag_manager, GENERATE_EDIT_COLUMNS)
@@ -108,9 +108,9 @@ class GenerateWindow(QMainWindow):
         self.negative_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.negative_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
 
-        # self.negative_table.cellDoubleClicked.connect(self.on_tag_table_double_click)
-        # self.negative_table.setContextMenuPolicy(Qt.CustomContextMenu)
-        # self.negative_table.customContextMenuRequested.connect(self.on_tag_table_right_click)
+        self.negative_table.cellDoubleClicked.connect(self.on_tag_table_double_click)
+        self.negative_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.negative_table.customContextMenuRequested.connect(self.on_negative_table_right_click)
 
         negative_view_layout.addWidget(self.negative_table)
         negative_view.setLayout(negative_view_layout)
@@ -183,6 +183,30 @@ class GenerateWindow(QMainWindow):
         # Show the menu at the position of the right click
         menu.exec_(self.tag_table.viewport().mapToGlobal(position))
 
+    def on_positive_table_right_click(self, position):
+        self.on_table_right_click(self.positive_table, position)
+
+    def on_negative_table_right_click(self, position):
+        self.on_table_right_click(self.negative_table, position)
+
+    def on_table_right_click(self, table: TagViewTableWidget, position):
+        # Create a menu
+        menu = QMenu()
+
+        # Add a menu item to the positive table menu
+        set_shuffle_action = QAction('设置抽签分组', self)
+        set_shuffle_action.triggered.connect(
+            lambda: self.do_set_shuffle(table))
+        menu.addAction(set_shuffle_action)
+
+        remove_shuffle_action = QAction('删除抽签分组', self)
+        remove_shuffle_action.triggered.connect(
+            lambda: self.do_remove_shuffle(table))
+        menu.addAction(remove_shuffle_action)
+
+        # Show the menu at the position of the right click
+        menu.exec_(table.viewport().mapToGlobal(position))
+
     def refresh_ui(self):
         self.refresh_tree()
         self.refresh_table()
@@ -220,6 +244,14 @@ class GenerateWindow(QMainWindow):
 
             # Refresh the table to display the updated data
             self.refresh_table()
+
+    def do_set_shuffle(self, table: TagEditTableWidget):
+        text, ok = QInputDialog.getText(self, '抽签分组', '请输入抽签分组名')
+        if ok and text and text.strip():
+            table.set_data_by_selected_row(3, text.strip())
+
+    def do_remove_shuffle(self, table: TagEditTableWidget):
+        table.set_data_by_selected_row(3, '')
 
 
 

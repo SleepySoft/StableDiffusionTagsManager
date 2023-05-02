@@ -248,9 +248,6 @@ class TagEditTableWidget(QTableWidget):
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Delete:
             rows = sorted(set(item.row() for item in self.selectedItems()))
-            # for row in reversed(rows):
-            #     self.removeRow(row)
-            # self.adjust_order()
             # Remove the row from the dataframe
             self.table_editing_data.drop(index=rows, inplace=True)
             self.table_editing_data.reset_index(drop=True, inplace=True)
@@ -291,37 +288,6 @@ class TagEditTableWidget(QTableWidget):
             self.table_editing_data = self.table_editing_data.append(
                 pd.DataFrame(append_rows, columns=self.table_editing_data.columns))
             self.table_editing_data = self.table_editing_data.reset_index(drop=True)
-
-            # for tag in tags:
-            #     if not any(self.item(row, 0).text() == tag for row in range(self.rowCount())):
-            #         row = self.rowCount()
-            #         trans = self.tag_manager.get_property(tag, 'translate_cn')
-            #         self.insertRow(row)
-            #         self.setItem(row, 0, QTableWidgetItem(tag))
-            #         self.setItem(row, 1, QTableWidgetItem('1'))
-            #         self.setItem(row, 2, QTableWidgetItem(trans))
-            #         self.setItem(row, 3, QTableWidgetItem(''))
-                    
-            #         plus_button = QPushButton('+')
-            #         minus_button = QPushButton('-')
-            #         plus_button.clicked.connect(partial(self.handle_button_click, '+', row))
-            #         minus_button.clicked.connect(partial(self.handle_button_click, '-', row))
-
-            #         # plus_button.setFixedSize(20, 20)
-            #         # minus_button.setFixedSize(20, 20)
-
-            #         plus_button.setMinimumSize(0, 0)
-            #         minus_button.setMinimumSize(0, 0)
-                    
-            #         plus_button.setStyleSheet("QPushButton {padding: 0px; margin: 0px; font-size: 12px;}")
-            #         minus_button.setStyleSheet("QPushButton {padding: 0px; margin: 0px; font-size: 12px;}")
-
-            #         self.setCellWidget(row, len(self.filed_declare) + 1, plus_button)
-            #         self.setCellWidget(row, len(self.filed_declare), minus_button)
-
-            #         self.resizeColumnToContents(1)
-            #         self.resizeColumnToContents(len(self.filed_declare))
-            #         self.resizeColumnToContents(len(self.filed_declare) + 1)
             event.accept()
         self.update_table()
 
@@ -361,6 +327,32 @@ class TagEditTableWidget(QTableWidget):
 
     def mimeTypes(self):
         return ['text/plain']
+
+    # --------------------------------------------------------------------------------------------
+
+    def get_selected_row_data(self, column_index):
+        selected_rows = self.selectionModel().selectedRows()
+        selected_data = []
+        for index in selected_rows:
+            if index is None:
+                pass
+            else:
+                item = self.item(index.row(), column_index)
+                selected_data.append(item.text())
+        return selected_data
+
+    def set_data_by_selected_row(self, column_index, data):
+        selected_rows = self.selectionModel().selectedRows()
+        for index in selected_rows:
+            if index is None:
+                pass
+            else:
+                item = self.item(index.row(), column_index)
+                item.setText(data)
+                tag_item = self.item(index.row(), 0)
+                tag = tag_item.text()
+                column_name = self.table_editing_data.columns[column_index]
+                self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, column_name] = data
 
     # --------------------------------------------------------------------------------------------
 
@@ -443,30 +435,6 @@ class TagEditTableWidget(QTableWidget):
         else:
             weight_value = 1.0 * (0.9 ** abs(weight_level))
         return '{:.2f}'.format(weight_value)
-
-    # def table_to_df(self):
-    #     # Create an empty dictionary to store the data
-    #     data_dict = {}
-    #     # Loop through each row in the table
-    #     for row in range(self.rowCount()):
-    #         # Create an empty list to store the row data
-    #         row_data = []
-    #         # Loop through each column in the row
-    #         for col in range(self.columnCount()):
-    #             # Get the item at the current row and column
-    #             item = self.item(row, col)
-    #             # If the item exists, append its text to the row data list
-    #             if item is not None:
-    #                 row_data.append(item.text())
-    #             # Otherwise, append an empty string to the row data list
-    #             else:
-    #                 row_data.append('')
-    #         # Add the row data to the data dictionary with the tag as the key
-    #         data_dict[row_data[0]] = row_data[1:]
-    #     # Convert the data dictionary to a pandas DataFrame
-    #     df = pd.DataFrame.from_dict(data_dict, orient='index', columns=self.filed_declare)
-    #     # Update the table_editing_data attribute with the new DataFrame
-    #     self.table_editing_data = df
 
 
 class CustomPlainTextEdit(QPlainTextEdit):
