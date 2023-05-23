@@ -191,6 +191,12 @@ class TagViewTableWidget(QTableWidget):
         self.setAcceptDrops(False)
         self.setDragDropMode(QAbstractItemView.DragDrop)
 
+        # Create a custom header for the positive table
+        positive_header = self.horizontalHeader()
+        positive_header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
+        positive_header.setSectionsClickable(True)
+        positive_header.sectionClicked.connect(self.on_header_clicked)
+
     def get_selected_row_field_value(self, column_index: int) -> [str]:
         selected_fields = [self.item(row.row(), column_index).text() for row in self.selectionModel().selectedRows()]
         return selected_fields
@@ -228,6 +234,18 @@ class TagViewTableWidget(QTableWidget):
 
     def dropEvent(self, event):
         event.ignore()
+
+    def on_header_clicked(self, column):
+        if column == 0:
+            header_item = self.horizontalHeaderItem(column)
+            if header_item.checkState() == Qt.Checked:
+                header_item.setCheckState(Qt.Unchecked)
+                for row in range(self.rowCount()):
+                    self.item(row, column).setCheckState(Qt.Unchecked)
+            else:
+                header_item.setCheckState(Qt.Checked)
+                for row in range(self.rowCount()):
+                    self.item(row, column).setCheckState(Qt.Checked)
 
 
 class TagEditTableWidget(QTableWidget):

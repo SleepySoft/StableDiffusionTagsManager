@@ -252,3 +252,18 @@ Group df_wildcards by shuffle field, get each group's tags and join them by ', '
 For each tag in df_flat_tags, if its weight is positive, wrap tags by '()' for weight specify levels. if its negative, wrap tags by '[]' for weight specify levels. Put them in flat_tags llist.
 Add wildcards and flat_tags list and Join them by ', ' and write the string to file_name specified file
 
+
+Make irst column header checkable. Check the header to check all first column items. 
+
+If item unchecked. The header check box will also unchecked. If all item checked, the header check box will auto unchecked.
+
+
+
+
+
+
+
+
+
+
+
