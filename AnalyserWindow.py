@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBo
     QGroupBox, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QAbstractItemView, QDialog, QPushButton, \
     QDialogButtonBox, QCheckBox, QMessageBox, QMenu, QAction
 
+from SaveTagsWindow import SaveTagsDialog
 from defines import ANALYSIS_README, PRESET_TAG_PATH, ANALYSIS_SHOW_COLUMNS
 from df_utility import *
 from TagManager import *
@@ -57,6 +58,14 @@ class AnalyserWindow(QWidget):
         auto_translate_button = QPushButton('自动翻译')
         auto_translate_button.clicked.connect(self.on_button_translate)
         menu_layout.addWidget(auto_translate_button)
+
+        auto_pick_button = QPushButton('自动选择有效标签')
+        auto_pick_button.clicked.connect(self.on_button_auto_pick_positive)
+        menu_layout.addWidget(auto_pick_button)
+
+        auto_pick_button = QPushButton('保存选中的正向标签')
+        auto_pick_button.clicked.connect(self.on_button_save_picked_positive)
+        menu_layout.addWidget(auto_pick_button)
 
         # self.group_check_button = QCheckBox('按组排列')
         # self.group_check_button.setChecked(True)
@@ -166,6 +175,23 @@ class AnalyserWindow(QWidget):
             TagManager.parse_prompts(self.text_edit.toPlainText())
         self.rebuild_analysis_table(True, True, True)
 
+    def parse_extra_info(self, text: str):
+        extra_info = {}
+        lines = text.split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            items = line.split(',')
+            for item in items:
+                if ':' not in item:
+                    continue
+                key, value = item.split(':', 1)
+                key = key.strip()
+                value = value.strip()
+                extra_info[key] = value
+        return extra_info
+    
     # Define a function to be called when a cell in the positive table is double clicked
     def on_positive_table_double_click(self, row, column):
         self.do_edit_item(self.positive_table, row, self.positive_df)
@@ -225,6 +251,27 @@ class AnalyserWindow(QWidget):
             return
 
         self.translate_unknown_tags()
+
+    def on_button_auto_pick_positive(self):
+        for row in range(self.positive_table.rowCount()):
+            value = self.positive_table.item(row, 2).text()
+            if value not in ['正向效果', '反向效果', '中立效果', '低价值'] and value != '':
+                self.positive_table.item(row, 0).setCheckState(Qt.Checked)
+
+    def on_button_save_picked_positive(self):
+        # Get the first column value from each checked row
+        checked_tags = [self.positive_table.item(row, 0).text()
+                        for row in range(self.positive_table.rowCount())
+                        if self.positive_table.item(row, 0).checkState() == Qt.Checked]
+
+        if len(checked_tags) > 0:
+            extras = self.parse_extra_info(self.extra_data)
+            extras_str = '\n'.join([f"{key}: {value}" for key, value in extras.items()])
+
+            dlg = SaveTagsDialog()
+            dlg.text_tags.setText(', '.join(checked_tags))
+            dlg.text_extras.setText(extras_str)
+            dlg.exec_()
 
     def update_tag_path_tree(self):
         TagManager.update_tag_path_tree(self.tree, self.tag_manager.get_database(), PRESET_TAG_PATH)

@@ -260,10 +260,19 @@ If item unchecked. The header check box will also unchecked. If all item checked
 
 
 
+Write a dialog window named "Save Tags" that layout vertical
+The first part is a group named "Tags" which includes a multiple line text editor as text_tags.
+The second part is a group named "附加信息" which includes a multiple line text editor as text_extras.
+The third part is a group name "保存路径" which includes a line input named save_path and a browse button to browse a save file with surfix ".sdtags" and fill the select path to save_path
+The 4th part has 2 button "保存"，"取消" horizontal.
+The first and second part has weight 1 and the rest has no weight.
+When User click "保存" button, if the save_path is available, save the file with content: 
+The first line is the texts in text_tags, then a empty line, than the context in text_extras.
 
 
 
 
-
+Write a function named parse extra information to key-value from the text like: " ENSD: 31337, Size: 512x768, Seed: 2998436537, Model: Perfect World v4, Steps: 25, Version: v1.2.1, Sampler: Euler a, CFG scale: 7, Clip skip: 2, Model hash: 24a393500f, Hires upscale: 2, Hires upscaler: Latent (bicubic antialiased), Denoising strength: 0.55"
+The items are seperated by "," and must have ":" inside to seperate key, value, otherwise should be ignored. Note that the text may in multiple lines and there're empty lines and spaces. 
 
 
