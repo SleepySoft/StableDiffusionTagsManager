@@ -52,6 +52,7 @@ class AnalyserWindow(QWidget):
 
         # Create the menu layout as a horizontal layout
         menu_layout = QHBoxLayout()
+
         # Add the '自动翻译' button to the menu layout and link it to the on_button_translate function
         auto_translate_button = QPushButton('自动翻译')
         auto_translate_button.clicked.connect(self.on_button_translate)
@@ -86,33 +87,6 @@ class AnalyserWindow(QWidget):
         negative_group_layout = QVBoxLayout()
         negative_group_layout.addWidget(self.negative_table)
         self.negative_group.setLayout(negative_group_layout)
-
-        # # Create a custom header for the positive table
-        # positive_header = self.positive_table.horizontalHeader()
-        # positive_header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
-        # positive_header.setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
-        # positive_header.setSectionsClickable(True)
-        # positive_header.sectionClicked.connect(self.on_positive_header_clicked)
-
-        # # Create a custom header for the negative table
-        # negative_header = self.negative_table.horizontalHeader()
-        # negative_header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeToContents)
-        # negative_header.setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
-        # negative_header.setSectionsClickable(True)
-        # negative_header.sectionClicked.connect(self.on_negative_header_clicked)
-
-        # # Create a custom header item for the positive table
-        # positive_header_item = QTableWidgetItem()
-        # positive_header_item.setFlags(positive_header_item.flags() | Qt.ItemIsUserCheckable)
-        # positive_header_item.setCheckState(Qt.Unchecked)
-        # self.positive_table.setHorizontalHeaderItem(0, positive_header_item)
-
-        # # Create a custom header item for the negative table
-        # negative_header_item = QTableWidgetItem()
-        # negative_header_item.setFlags(negative_header_item.flags() | Qt.ItemIsUserCheckable)
-        # negative_header_item.setCheckState(Qt.Unchecked)
-        # self.negative_table.setHorizontalHeaderItem(0, negative_header_item)
-        
 
         # Set the horizontal header of the positive and negative tables to be clickable for sorting
         self.positive_table.horizontalHeader().setSectionsClickable(True)
