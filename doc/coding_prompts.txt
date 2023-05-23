@@ -276,3 +276,24 @@ Write a function named parse extra information to key-value from the text like: 
 The items are seperated by "," and must have ":" inside to seperate key, value, otherwise should be ignored. Note that the text may in multiple lines and there're empty lines and spaces. 
 
 
+check and build a folder named depot in the same folder of this file and set the file dialog default path to it.
+
+
+
+Create a tab and Move group_view and tags_view to the first tab which named 'Tag数据库'.
+The second tab named 'Tag收藏' with vertical layout. In this tab, the top is a groupbox named '浏览' includes a tree view named tree_depot_browse
+and the bottom is a groupbox named '信息' which includes a read only multiple line text named text_information
+Keep others the same.
+
+add a groupbox above tags_view named "灵感仓库" includes a tree that lits the files with surfix "sdtags" under the "depot" folder that on the same path of this python file.
+
+
+
+
+
+
+
+
+
+
+

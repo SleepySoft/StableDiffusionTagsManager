@@ -1,4 +1,7 @@
+import os
 import sys
+
+from PyQt5.QtGui import QTextCursor
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QTextEdit, QLineEdit, \
     QPushButton, QFileDialog, QDialog
 
@@ -47,6 +50,11 @@ class SaveTagsDialog(QDialog):
         self.buttons_layout.addWidget(self.cancel_button)
         self.layout.addLayout(self.buttons_layout)
 
+        if self.text_extras.toPlainText():
+            self.text_extras.append("\n\n")
+        self.text_extras.append("Comments: ")
+        self.text_extras.moveCursor(QTextCursor.End)
+        
         self.setLayout(self.layout)
         self.resize(800, 600)
 
@@ -57,8 +65,15 @@ class SaveTagsDialog(QDialog):
     #         self.save_path.setText(file_name)
 
     def save_file(self):
+        depot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'depot')
+        if not os.path.exists(depot_path):
+            os.makedirs(depot_path)
+
         options = QFileDialog.Options()
-        file_name, _ = QFileDialog.getSaveFileName(self, "Save File", "", "SDTags (*.sdtags)", options=options)
+        options = QFileDialog.Options()
+        options |= QFileDialog.DontUseNativeDialog
+
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save File", depot_path, "SDTags (*.sdtags)", options=options)
         if file_name:
             with open(file_name, 'w') as file:
                 file.write(self.text_tags.toPlainText())

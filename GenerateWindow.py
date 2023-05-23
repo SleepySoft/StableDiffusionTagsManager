@@ -39,7 +39,6 @@ class GenerateWindow(QMainWindow):
 
         group_view_layout.addWidget(self.tree)
         group_view.setLayout(group_view_layout)
-        root_layout.addWidget(group_view, 20)
 
         # Create the center group view named "Tags" that wraps a CustomTableWidget
         tags_view = QGroupBox("Tags")
@@ -63,7 +62,52 @@ class GenerateWindow(QMainWindow):
         
         tags_view_layout.addWidget(self.tag_table)
         tags_view.setLayout(tags_view_layout)
-        root_layout.addWidget(tags_view, 50)
+
+        # Create the first tab named 'Tag数据库'
+        tag_database_tab = QWidget()
+        tag_database_tab_layout = QHBoxLayout()
+
+        # Move group_view and tags_view to the first tab which named 'Tag数据库' and keep its layout.
+        tag_database_tab_layout.addWidget(group_view, 35)
+        tag_database_tab_layout.addWidget(tags_view, 65)
+        tag_database_tab.setLayout(tag_database_tab_layout)
+
+        # Create the second tab named 'Tag收藏' with vertical layout.
+        tag_collection_tab = QWidget()
+        tag_collection_tab_layout = QHBoxLayout()
+
+        # In this tab, the top is a groupbox named '浏览' includes a tree view named tree_depot_browse
+        browse_view = QGroupBox("浏览")
+        browse_view_layout = QVBoxLayout()
+
+        self.tree_depot_browse = DraggableTree(self.tag_manager.get_database(), self.on_edit_done, parent=self)
+        self.tree_depot_browse.setHeaderLabels(['Tag分类'])
+        self.tree_depot_browse.setColumnCount(1)
+        self.tree_depot_browse.itemClicked.connect(self.on_tree_click)
+
+        browse_view_layout.addWidget(self.tree_depot_browse)
+        browse_view.setLayout(browse_view_layout)
+        tag_collection_tab_layout.addWidget(browse_view)
+
+        # the bottom is a groupbox named '信息' which includes a read only multiple line text named text_information
+        information_view = QGroupBox("信息")
+        information_view_layout = QVBoxLayout()
+
+        self.text_information = CustomPlainTextEdit()
+        self.text_information.setReadOnly(True)
+
+        information_view_layout.addWidget(self.text_information)
+        information_view.setLayout(information_view_layout)
+        tag_collection_tab_layout.addWidget(information_view)
+
+        tag_collection_tab.setLayout(tag_collection_tab_layout)
+
+        # Create the tab widget and add the two tabs
+        tab_widget = QTabWidget()
+        tab_widget.addTab(tag_database_tab, "Tag数据库")
+        tab_widget.addTab(tag_collection_tab, "Tag收藏")
+
+        root_layout.addWidget(tab_widget)
 
         # Create the right vertical layout
         right_layout = QVBoxLayout()
@@ -78,7 +122,6 @@ class GenerateWindow(QMainWindow):
         generate_button.clicked.connect(self.do_generate)
         # Add the button to the action_view_layout
         action_view_layout.addWidget(generate_button)
-
 
         action_view.setLayout(action_view_layout)
         right_layout.addWidget(action_view, 20)
@@ -129,12 +172,84 @@ class GenerateWindow(QMainWindow):
         right_layout.setContentsMargins(0, 0, 0, 0)
         right_widget = QWidget()
         right_widget.setLayout(right_layout)
-        root_layout.addWidget(right_widget, 40)
 
         # Set the root layout
         root_widget = QWidget()
         root_widget.setLayout(root_layout)
         self.setCentralWidget(root_widget)
+
+        root_layout.addWidget(tab_widget, 50)
+        root_layout.addWidget(right_widget, 40)
+
+        # # Create the right vertical layout
+        # right_layout = QVBoxLayout()
+        #
+        # # Create the top group view named "Action"
+        # action_view = QGroupBox("Action")
+        # action_view_layout = QVBoxLayout()
+        #
+        # # Create a button named "生成"
+        # generate_button = QPushButton("生成", self)
+        # # Connect the button to the on_generate function
+        # generate_button.clicked.connect(self.do_generate)
+        # # Add the button to the action_view_layout
+        # action_view_layout.addWidget(generate_button)
+        #
+        # action_view.setLayout(action_view_layout)
+        # right_layout.addWidget(action_view, 20)
+        #
+        # # Create the group view named "Positive" that wraps a multiple line text editor
+        # positive_view = QGroupBox("正向Tag")
+        # positive_view_layout = QVBoxLayout()
+        #
+        # self.positive_table = TagEditTableWidget(self.tag_manager, GENERATE_EDIT_COLUMNS)
+        #
+        # self.positive_table.horizontalHeader().setSectionsClickable(True)
+        # self.positive_table.horizontalHeader().sectionClicked.connect(self.positive_table.sortByColumn)
+        #
+        # self.positive_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        # self.positive_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        # self.positive_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        #
+        # self.positive_table.cellDoubleClicked.connect(self.on_tag_table_double_click)
+        # self.positive_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        # self.positive_table.customContextMenuRequested.connect(self.on_positive_table_right_click)
+        #
+        # positive_view_layout.addWidget(self.positive_table)
+        # positive_view.setLayout(positive_view_layout)
+        # right_layout.addWidget(positive_view, 50)
+        #
+        # # Create the group view named "Negative" that wraps a multiple line text editor
+        # negative_view = QGroupBox("反向Tag")
+        # negative_view_layout = QVBoxLayout()
+        #
+        # self.negative_table = TagEditTableWidget(self.tag_manager, GENERATE_EDIT_COLUMNS)
+        #
+        # self.negative_table.horizontalHeader().setSectionsClickable(True)
+        # self.negative_table.horizontalHeader().sectionClicked.connect(self.negative_table.sortByColumn)
+        #
+        # self.negative_table.setSelectionBehavior(QAbstractItemView.SelectRows)
+        # self.negative_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        # self.negative_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        #
+        # self.negative_table.cellDoubleClicked.connect(self.on_tag_table_double_click)
+        # self.negative_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        # self.negative_table.customContextMenuRequested.connect(self.on_negative_table_right_click)
+        #
+        # negative_view_layout.addWidget(self.negative_table)
+        # negative_view.setLayout(negative_view_layout)
+        # right_layout.addWidget(negative_view, 30)
+
+        # Set the weight of the right layout to 40%
+        # right_layout.setContentsMargins(0, 0, 0, 0)
+        # right_widget = QWidget()
+        # right_widget.setLayout(right_layout)
+        # root_layout.addWidget(right_widget, 40)
+        #
+        # # Set the root layout
+        # root_widget = QWidget()
+        # root_widget.setLayout(root_layout)
+        # self.setCentralWidget(root_widget)
 
     def on_widget_activated(self):
         self.refresh_ui()
