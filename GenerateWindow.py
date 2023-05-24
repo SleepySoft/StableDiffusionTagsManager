@@ -28,21 +28,60 @@ class GenerateWindow(QMainWindow):
         # Create the root layout as a horizontal layout
         root_layout = QHBoxLayout()
 
+        # ----------------- Left part - group group box -----------------
+
         # Create the left group view named "Group" that wraps a DraggableTree
         group_view = QGroupBox("Group")
         group_view_layout = QVBoxLayout()
-
-        self.tree = DraggableTree(self.tag_manager.get_database(), self.on_edit_done, parent=self)
-        self.tree.setHeaderLabels(['Tag分类'])
-        self.tree.setColumnCount(1)
-        self.tree.itemClicked.connect(self.on_tree_click)
-
-        group_view_layout.addWidget(self.tree)
         group_view.setLayout(group_view_layout)
 
+        # ------------------------- Database Tree -------------------------
+
+        self.tree_db = DraggableTree(self.tag_manager.get_database(), self.on_edit_done, parent=self)
+        self.tree_db.setHeaderLabels(['Tag分类'])
+        self.tree_db.setColumnCount(1)
+        self.tree_db.itemClicked.connect(self.on_tree_click)
+
+        # --------------------------- Depot Tree ---------------------------
+
+        self.tree_depot_browse = DraggableTree(self.tag_manager.get_database(), self.on_edit_done, parent=self)
+        self.tree_depot_browse.setHeaderLabels(['Tag分类'])
+        self.tree_depot_browse.setColumnCount(1)
+
+        self.tree_depot_browse.itemClicked.connect(self.on_tree_depot_browse_item_clicked)
+        # self.tree_depot_browse.itemDragged.connect(self.on_tree_depot_browse_item_dragged)
+
+        # Create the first tab named 'Tag数据库'
+        tag_database_tab = QWidget()
+        tag_database_tab_layout = QHBoxLayout()
+        tag_database_tab_layout.addWidget(self.tree_db)
+        tag_database_tab.setLayout(tag_database_tab_layout)
+
+        # Create the second tab named 'Tag收藏' with vertical layout.
+        tag_collection_tab = QWidget()
+        tag_collection_tab_layout = QVBoxLayout()
+        tag_collection_tab_layout.addWidget(self.tree_depot_browse)
+        tag_collection_tab.setLayout(tag_collection_tab_layout)
+
+        # Create the tab widget and add the two tabs
+        tab_widget = QTabWidget()
+        tab_widget.addTab(tag_database_tab, "Tag数据库")
+        tab_widget.addTab(tag_collection_tab, "Tag收藏")
+
+        group_view_layout.addWidget(tab_widget)
+
+        root_layout.addWidget(group_view, 20)
+
+        # ---------------------------------------------------------------------------
+
+        center_layout = QVBoxLayout()
+
+        # ---------------------- The tag group ----------------------
+
         # Create the center group view named "Tags" that wraps a CustomTableWidget
-        tags_view = QGroupBox("Tags")
-        tags_view_layout = QVBoxLayout()
+        group_tags_view = QGroupBox("Tags")
+        group_tags_view_layout = QVBoxLayout()
+        group_tags_view.setLayout(group_tags_view_layout)
 
         self.tag_table = TagViewTableWidget()
         self.tag_table.setColumnCount(2)
@@ -59,57 +98,27 @@ class GenerateWindow(QMainWindow):
         self.tag_table.cellDoubleClicked.connect(self.on_tag_table_double_click)
         self.tag_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.tag_table.customContextMenuRequested.connect(self.on_tag_table_right_click)
-        
-        tags_view_layout.addWidget(self.tag_table)
-        tags_view.setLayout(tags_view_layout)
 
-        # Create the first tab named 'Tag数据库'
-        tag_database_tab = QWidget()
-        tag_database_tab_layout = QHBoxLayout()
+        group_tags_view_layout.addWidget(self.tag_table)
 
-        # Move group_view and tags_view to the first tab which named 'Tag数据库' and keep its layout.
-        tag_database_tab_layout.addWidget(group_view, 35)
-        tag_database_tab_layout.addWidget(tags_view, 65)
-        tag_database_tab.setLayout(tag_database_tab_layout)
-
-        # Create the second tab named 'Tag收藏' with vertical layout.
-        tag_collection_tab = QWidget()
-        tag_collection_tab_layout = QHBoxLayout()
-
-        # In this tab, the top is a groupbox named '浏览' includes a tree view named tree_depot_browse
-        browse_view = QGroupBox("浏览")
-        browse_view_layout = QVBoxLayout()
-
-        self.tree_depot_browse = DraggableTree(self.tag_manager.get_database(), self.on_edit_done, parent=self)
-        self.tree_depot_browse.setHeaderLabels(['Tag分类'])
-        self.tree_depot_browse.setColumnCount(1)
-
-        self.tree_depot_browse.itemClicked.connect(self.on_tree_depot_browse_item_clicked)
-        # self.tree_depot_browse.itemDragged.connect(self.on_tree_depot_browse_item_dragged)
-
-        browse_view_layout.addWidget(self.tree_depot_browse)
-        browse_view.setLayout(browse_view_layout)
-        tag_collection_tab_layout.addWidget(browse_view)
+        # ------------------ The information group ------------------
 
         # the bottom is a groupbox named '信息' which includes a read only multiple line text named text_information
-        information_view = QGroupBox("信息")
-        information_view_layout = QVBoxLayout()
+        self.group_information = QGroupBox("信息")
+        group_information_layout = QVBoxLayout()
+        self.group_information.setLayout(group_information_layout)
 
         self.text_information = CustomPlainTextEdit()
         self.text_information.setReadOnly(True)
 
-        information_view_layout.addWidget(self.text_information)
-        information_view.setLayout(information_view_layout)
-        tag_collection_tab_layout.addWidget(information_view)
+        group_information_layout.addWidget(self.text_information)
 
-        tag_collection_tab.setLayout(tag_collection_tab_layout)
+        center_layout.addWidget(group_tags_view, 55)
+        center_layout.addWidget(self.group_information, 45)
 
-        # Create the tab widget and add the two tabs
-        tab_widget = QTabWidget()
-        tab_widget.addTab(tag_database_tab, "Tag数据库")
-        tab_widget.addTab(tag_collection_tab, "Tag收藏")
+        root_layout.addLayout(center_layout, 35)
 
-        root_layout.addWidget(tab_widget)
+        # ---------------------------------------------------------------------------
 
         # Create the right vertical layout
         right_layout = QVBoxLayout()
@@ -180,8 +189,7 @@ class GenerateWindow(QMainWindow):
         root_widget.setLayout(root_layout)
         self.setCentralWidget(root_widget)
 
-        root_layout.addWidget(tab_widget, 50)
-        root_layout.addWidget(right_widget, 40)
+        root_layout.addWidget(right_widget, 45)
 
         # # Create the right vertical layout
         # right_layout = QVBoxLayout()
@@ -270,7 +278,7 @@ class GenerateWindow(QMainWindow):
 
     def on_tree_click(self, item: QTreeWidgetItem):
         df = self.tag_manager.get_database()
-        full_path = self.tree.get_node_path(item)
+        full_path = self.tree_db.get_node_path(item)
 
         # If includes_sub_path is true, filter df by 'path' value starts with full_path
         # else filter df by 'path' value equals full_path
@@ -342,7 +350,7 @@ class GenerateWindow(QMainWindow):
         self.refresh_table()
 
     def refresh_tree(self):
-        TagManager.update_tag_path_tree(self.tree, self.tag_manager.get_database(), PRESET_TAG_PATH)
+        TagManager.update_tag_path_tree(self.tree_db, self.tag_manager.get_database(), PRESET_TAG_PATH)
 
     def refresh_table(self):
         TagManager.dataframe_to_table_widget(self.tag_table, self.display_tag, GENERATE_SHOW_COLUMNS, [])
