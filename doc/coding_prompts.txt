@@ -294,8 +294,32 @@ When user drags a node. If the node is a file, then TODO. Else ignore.
 if it's a file. read file content as string. get the first line and split it the by ',' as tags. trim rest lines as extra. 
 
 
+Implement parse_prompts(prompt_text: str):
+Strip the prompt_text, remove the empty line and the lines that only has space chars.
+Find the positive tags string start:
+    Find ‘positive prompt’ text ignore case, there should be a colon follows it (maybe have spaces maybe not).
+    If ‘positive prompt’ text is not found. The positive tags start should be the start of the prompt_text.
+Find the negative tags string start:
+    Find 'negative prompt' text ignore case, there should be a colon follows it (maybe have spaces maybe not). The positive tags string should end here.
+    If 'negative prompt' text is not found. The positive tags should be the first not empty line. And no negative tags.
+The reset text should be extra data string
+Show the positive_tags_string, negative_tags_string and extra_data_string
 
 
 
+
+实现函数analysis_tag(tag: str):
+如果tag被"[]"包围:
+    计算"[]"的层数，假设为n，weight为0.9的n次方，加入weight_list。将所有"[]"去除，加入tag_list。
+如果tag被{}包围:
+    计算"()"的层数，假设为n，weight为1.1的n次方，加入weight_list。将所有"()"去除，加入tag_list。
+如果tag被"()"包围:
+    如果其中包含":"，则去除所有"()"，并以":"分割字符串，作为sub_tags。对于其中每一项，如果为数字（包括小数），加入weight_list，否则加入tag_list。
+    如果其中不包含":"，则同被{}包围的情况
+如果tag被"<>"包围，则以最后一个":"分割字符串。前者加入加入tag_list，后者加入加入weight_list。
+如果weight_list比tag_list长，则从weight_list移除末尾的元素，直到与tag_list相等
+如果weight_list比tag_list短，则加入"1"，直到与tag_list相等
+
+标签不会被多种括号包围。权重的n为括号的层数。如果标签被 () 包围，则数字加入weight_list，非数字加入tag_list。标签被<>包围但不包含:，则把它当作一个权重为1的普通标签。
 
 
