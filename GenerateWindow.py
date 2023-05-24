@@ -83,7 +83,9 @@ class GenerateWindow(QMainWindow):
         self.tree_depot_browse = DraggableTree(self.tag_manager.get_database(), self.on_edit_done, parent=self)
         self.tree_depot_browse.setHeaderLabels(['Tag分类'])
         self.tree_depot_browse.setColumnCount(1)
-        self.tree_depot_browse.itemClicked.connect(self.on_tree_click)
+
+        self.tree_depot_browse.itemClicked.connect(self.on_tree_depot_browse_item_clicked)
+        # self.tree_depot_browse.itemDragged.connect(self.on_tree_depot_browse_item_dragged)
 
         browse_view_layout.addWidget(self.tree_depot_browse)
         browse_view.setLayout(browse_view_layout)
@@ -252,6 +254,7 @@ class GenerateWindow(QMainWindow):
         # self.setCentralWidget(root_widget)
 
     def on_widget_activated(self):
+        self.refresh_depot_tree()
         self.refresh_ui()
 
     def on_edit_done(self, refresh_tree: bool = False):
@@ -391,6 +394,43 @@ class GenerateWindow(QMainWindow):
         
         # Open negative.txt file
         os.startfile('negative.txt')
+
+    def refresh_depot_tree(self):
+        self.tree_depot_browse.clear()
+        depot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'depot')
+        for root, dirs, files in os.walk(depot_path):
+            for file in files:
+                if file.endswith('.sdtags'):
+                    file_path = os.path.join(root, file)
+                    item = QTreeWidgetItem(self.tree_depot_browse)
+                    item.setText(0, os.path.relpath(file_path, depot_path))
+                    item.setData(0, Qt.UserRole, file_path)
+
+    def on_depot_file_selected(self, file_path):
+        tags, extra = self.read_file_content(file_path)
+        if extra is not None:
+            self.text_information.setPlainText(extra)
+
+    def on_tree_depot_browse_item_clicked(self, item, column):
+        file_path = item.data(0, Qt.UserRole)
+        if file_path is not None:
+            self.on_depot_file_selected(file_path)
+
+    def on_tree_depot_browse_item_dragged(self, item, column):
+        if item.childCount() == 0:
+            file_path = item.data(0, Qt.UserRole)
+            if file_path is not None:
+                print('TODO: Dragged file:', file_path)
+
+    def read_file_content(self, file_path):
+        if os.path.isfile(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.readlines()
+                tags = content[0].strip().split(',')
+                extra = '\n'.join(l.strip() for l in content[1:] if l.strip() != '') if len(content) > 1 else None
+                return tags, extra
+        return None, None
+
 
         
 

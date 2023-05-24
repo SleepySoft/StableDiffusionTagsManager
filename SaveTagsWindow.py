@@ -70,10 +70,10 @@ class SaveTagsDialog(QDialog):
             os.makedirs(depot_path)
 
         options = QFileDialog.Options()
-        options = QFileDialog.Options()
         options |= QFileDialog.DontUseNativeDialog
 
-        file_name, _ = QFileDialog.getSaveFileName(self, "Save File", depot_path, "SDTags (*.sdtags)", options=options)
+        extension = '.sdtags'
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save File", depot_path, "SDTags (*%s)" % extension, options=options)
         if file_name:
             with open(file_name, 'w') as file:
                 file.write(self.text_tags.toPlainText())
