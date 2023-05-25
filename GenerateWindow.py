@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBo
     QGroupBox, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QAbstractItemView, QDialog, QPushButton, \
     QDialogButtonBox, QCheckBox, QMessageBox, QMenu, QAction, QInputDialog
 
+from Prompts import Prompts
 from defines import ANALYSIS_README, PRESET_TAG_PATH, ANALYSIS_SHOW_COLUMNS, GENERATE_DISPLAY_FIELD, \
     GENERATE_SHOW_COLUMNS, GENERATE_EDIT_FIELDS, GENERATE_EDIT_COLUMNS
 from df_utility import *
@@ -414,11 +415,6 @@ class GenerateWindow(QMainWindow):
                     item.setText(0, os.path.relpath(file_path, depot_path))
                     item.setData(0, Qt.UserRole, file_path)
 
-    def on_depot_file_selected(self, file_path):
-        tags, extra = self.read_file_content(file_path)
-        if extra is not None:
-            self.text_information.setPlainText(extra)
-
     def on_tree_depot_browse_item_clicked(self, item, column):
         file_path = item.data(0, Qt.UserRole)
         if file_path is not None:
@@ -430,14 +426,25 @@ class GenerateWindow(QMainWindow):
             if file_path is not None:
                 print('TODO: Dragged file:', file_path)
 
-    def read_file_content(self, file_path):
-        if os.path.isfile(file_path):
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.readlines()
-                tags = content[0].strip().split(',')
-                extra = '\n'.join(l.strip() for l in content[1:] if l.strip() != '') if len(content) > 1 else None
-                return tags, extra
-        return None, None
+    def on_depot_file_selected(self, file_path):
+        prompt = Prompts()
+        if prompt.from_file(file_path):
+            df = self.tag_manager.get_database()
+            self.display_tag = pd.DataFrame(prompt.positive_tag_data_dict)
+            self.display_tag = merge_df_keeping_left_value(self.display_tag, df, PRIMARY_KEY)
+            translate_df(self.display_tag, PRIMARY_KEY, 'translate_cn', True, True)
+            self.refresh_table()
+
+            self.text_information.setPlainText(prompt.extra_data_string)
+
+    # def read_file_content(self, file_path):
+    #     if os.path.isfile(file_path):
+    #         with open(file_path, 'r', encoding='utf-8') as f:
+    #             content = f.readlines()
+    #             tags = content[0].strip().split(',')
+    #             extra = '\n'.join(l.strip() for l in content[1:] if l.strip() != '') if len(content) > 1 else None
+    #             return tags, extra
+    #     return None, None
 
 
         

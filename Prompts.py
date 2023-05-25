@@ -42,19 +42,19 @@ class Prompts:
         self.negative_tag_data_dict = Prompts.tags_list_to_tag_data(unique_list(negative_tags))
         return True
 
-    def positive_tag_string(self) -> str:
-        return Prompts.tag_data_dict_to_string(self.positive_tag_data_dict)
+    def positive_tag_string(self, includes_weight: bool) -> str:
+        return Prompts.tag_data_dict_to_string(self.positive_tag_data_dict, includes_weight)
 
-    def negative_tag_string(self) -> str:
-        return Prompts.tag_data_dict_to_string(self.negative_tag_data_dict)
+    def negative_tag_string(self, includes_weight: bool) -> str:
+        return Prompts.tag_data_dict_to_string(self.negative_tag_data_dict, includes_weight)
 
     def re_format_extra_string(self) -> str:
         extra_data = self.parse_extra_info(self.extra_data_string)
         return '\n'.join([f"{key}: {value}" for key, value in extra_data.items()])
 
     @staticmethod
-    def tag_data_dict_to_string(tag_data_dict: dict) -> str:
-        tags_with_weight = [('(%s:%s)' % (t, w) if w != '' else t)
+    def tag_data_dict_to_string(tag_data_dict: dict, includes_weight: bool) -> str:
+        tags_with_weight = [('(%s:%s)' % (t, w) if includes_weight and (w != '') else t)
                             for t, w in zip(tag_data_dict[PRIMARY_KEY],
                                             tag_data_dict['weight'])]
         return ', '.join(tags_with_weight)

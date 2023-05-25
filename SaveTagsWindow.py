@@ -55,8 +55,8 @@ class SavePromptsDialog(QDialog):
         self.buttons_layout.addWidget(self.cancel_button)
         self.layout.addLayout(self.buttons_layout)
 
-        self.text_tags.setText(self.prompts.positive_tag_string() + '\n' +
-                               self.prompts.negative_tag_string())
+        self.text_tags.setText(self.prompts.positive_tag_string(True) + '\n' +
+                               self.prompts.negative_tag_string(True))
         self.text_extras.setPlainText(self.prompts.re_format_extra_string() + '\n\nComments: ')
         self.text_extras.moveCursor(QTextCursor.End)
         
@@ -80,7 +80,7 @@ class SavePromptsDialog(QDialog):
         extension = '.sdtags'
         file_name, _ = QFileDialog.getSaveFileName(self, "Save File", depot_path, "SDTags (*%s)" % extension, options=options)
         if file_name:
-            with open(file_name, 'w') as file:
+            with open(file_name + extension, 'w') as file:
                 file.write(self.text_tags.toPlainText())
                 file.write('\n\n')
                 file.write(self.text_extras.toPlainText())
