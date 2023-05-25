@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBo
     QDialogButtonBox, QCheckBox, QMessageBox, QMenu, QAction
 
 from Prompts import Prompts
-from SaveTagsWindow import SaveTagsDialog
+from SaveTagsWindow import SavePromptsDialog
 from defines import ANALYSIS_README, PRESET_TAG_PATH, ANALYSIS_SHOW_COLUMNS
 from df_utility import *
 from TagManager import *
@@ -179,23 +179,6 @@ class AnalyserWindow(QWidget):
         # self.positive_tags, self.negative_tags, self.extra_data = \
         #     TagManager.parse_prompts(self.text_edit.toPlainText())
         self.rebuild_analysis_table(True, True, True)
-
-    def parse_extra_info(self, text: str):
-        extra_info = {}
-        lines = text.split('\n')
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-            items = line.split(',')
-            for item in items:
-                if ':' not in item:
-                    continue
-                key, value = item.split(':', 1)
-                key = key.strip()
-                value = value.strip()
-                extra_info[key] = value
-        return extra_info
     
     # Define a function to be called when a cell in the positive table is double clicked
     def on_positive_table_double_click(self, row, column):
@@ -264,18 +247,24 @@ class AnalyserWindow(QWidget):
                 self.positive_table.item(row, 0).setCheckState(Qt.Checked)
 
     def on_button_save_picked_positive(self):
-        # Get the first column value from each checked row
-        checked_tags = [self.positive_table.item(row, 0).text()
-                        for row in range(self.positive_table.rowCount())
-                        if self.positive_table.item(row, 0).checkState() == Qt.Checked]
+        checked_tags = []
+        weights = []
+        for row in range(self.positive_table.rowCount()):
+            if self.positive_table.item(row, 0).checkState() == Qt.Checked:
+                checked_tags.append(self.positive_table.item(row, 0).text())
+                weights.append(self.positive_table.item(row, 1).text())
 
         if len(checked_tags) > 0:
-            extras = self.parse_extra_info(self.prompts.extra_data)
-            extras_str = '\n'.join([f"{key}: {value}" for key, value in extras.items()])
+            prompt = Prompts()
+            prompt.positive_tag_data_dict = {PRIMARY_KEY: checked_tags, 'weight': weights}
+            prompt.extra_data_string = self.prompts.extra_data_string
 
-            dlg = SaveTagsDialog()
-            dlg.text_tags.setText(', '.join(checked_tags))
-            dlg.text_extras.setText(extras_str)
+            # extras = self.parse_extra_info(self.prompts.extra_data_string)
+            # prompt.extra_data_string = '\n'.join([f"{key}: {value}" for key, value in extras.items()])
+
+            dlg = SavePromptsDialog(prompt)
+            # dlg.text_tags.setText(', '.join(checked_tags))
+            # dlg.text_extras.setText(extras_str)
             dlg.exec_()
 
     def update_tag_path_tree(self):

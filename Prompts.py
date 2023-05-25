@@ -25,9 +25,9 @@ def parse_wrapper(tag: str, left: str, right: str, base: float) -> (str, float):
 
 class Prompts:
     def __init__(self):
-        self.positive_tag_data_dict = pd.DataFrame(columns=[PRIMARY_KEY, 'weight'])
-        self.negative_tag_data_dict = pd.DataFrame(columns=[PRIMARY_KEY, 'weight'])
-        self.extra_data = ''
+        self.positive_tag_data_dict = {PRIMARY_KEY: [], 'weight': []}
+        self.negative_tag_data_dict = {PRIMARY_KEY: [], 'weight': []}
+        self.extra_data_string = ''
 
     def from_text(self, text: str) -> bool:
         return self.parse_prompt_text(text)
@@ -37,10 +37,45 @@ class Prompts:
             return self.from_text(f.read())
 
     def parse_prompt_text(self, text: str):
-        positive_tags, negative_tags, self.extra_data = Prompts.parse_prompts(text)
+        positive_tags, negative_tags, self.extra_data_string = Prompts.parse_prompts(text)
         self.positive_tag_data_dict = Prompts.tags_list_to_tag_data(unique_list(positive_tags))
         self.negative_tag_data_dict = Prompts.tags_list_to_tag_data(unique_list(negative_tags))
         return True
+
+    def positive_tag_string(self) -> str:
+        return Prompts.tag_data_dict_to_string(self.positive_tag_data_dict)
+
+    def negative_tag_string(self) -> str:
+        return Prompts.tag_data_dict_to_string(self.negative_tag_data_dict)
+
+    def re_format_extra_string(self) -> str:
+        extra_data = self.parse_extra_info(self.extra_data_string)
+        return '\n'.join([f"{key}: {value}" for key, value in extra_data.items()])
+
+    @staticmethod
+    def tag_data_dict_to_string(tag_data_dict: dict) -> str:
+        tags_with_weight = [('(%s:%s)' % (t, w) if w != '' else t)
+                            for t, w in zip(tag_data_dict[PRIMARY_KEY],
+                                            tag_data_dict['weight'])]
+        return ', '.join(tags_with_weight)
+
+    @staticmethod
+    def parse_extra_info(text: str) -> dict:
+        extra_info = {}
+        lines = text.split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            items = line.split(',')
+            for item in items:
+                if ':' not in item:
+                    continue
+                key, value = item.split(':', 1)
+                key = key.strip()
+                value = value.strip()
+                extra_info[key] = value
+        return extra_info
 
     @staticmethod
     def parse_prompts(prompt_text: str):

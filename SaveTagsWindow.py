@@ -5,10 +5,15 @@ from PyQt5.QtGui import QTextCursor
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, QTextEdit, QLineEdit, \
     QPushButton, QFileDialog, QDialog
 
+from Prompts import Prompts
+from TagManager import PRIMARY_KEY
 
-class SaveTagsDialog(QDialog):
-    def __init__(self):
+
+class SavePromptsDialog(QDialog):
+    def __init__(self, prompts: Prompts):
         super().__init__()
+
+        self.prompts = prompts
 
         self.setWindowTitle("Save Tags")
         self.layout = QVBoxLayout()
@@ -50,9 +55,9 @@ class SaveTagsDialog(QDialog):
         self.buttons_layout.addWidget(self.cancel_button)
         self.layout.addLayout(self.buttons_layout)
 
-        if self.text_extras.toPlainText():
-            self.text_extras.append("\n\n")
-        self.text_extras.append("Comments: ")
+        self.text_tags.setText(self.prompts.positive_tag_string() + '\n' +
+                               self.prompts.negative_tag_string())
+        self.text_extras.setPlainText(self.prompts.re_format_extra_string() + '\n\nComments: ')
         self.text_extras.moveCursor(QTextCursor.End)
         
         self.setLayout(self.layout)
@@ -84,7 +89,7 @@ class SaveTagsDialog(QDialog):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = SaveTagsDialog()
+    window = SavePromptsDialog()
     window.show()
     sys.exit(app.exec_())
 
