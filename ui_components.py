@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QVBoxLayout, QTableWidget, QTableWidgetItem, QTreeWi
 
 from Prompts import try_float, WEIGHT_INC_BASE, WEIGHT_DEC_BASE
 from TagManager import PRIMARY_KEY, TagManager
+from app_utility import format_float
 from df_utility import translate_df
 
 
@@ -303,8 +304,6 @@ class TagEditTableWidget(QTableWidget):
             for data in tag_data:
                 tag = data[PRIMARY_KEY]
                 weight = data.get('weight', '')
-                if weight == '':
-                    weight = 1
 
                 # weight_digit = try_float(weight)
                 # if weight_digit is None:
@@ -404,14 +403,17 @@ class TagEditTableWidget(QTableWidget):
         flat_tags = []
         for index, row in df_flat_tags.iterrows():
             tag = row['tag']
-            weight = int(row['weight'])
+            weight = row['weight']
+
+            if try_float(weight):
+                tag = '(%s: %s)' % (tag, weight)
 
             # # If the weight is 1, than it's (tag), if 2 than ((tag)) and so on.
             # if weight > 0:
             #     tag = f"{'(' * weight}{tag}{')' * weight}"
             # elif weight < 0:
             #     tag = f"{'[' * abs(weight)}{tag}{']' * abs(weight)}"
-            
+
             flat_tags.append(tag)
 
         with open(file_name, 'w') as f:
@@ -428,9 +430,21 @@ class TagEditTableWidget(QTableWidget):
             # Pass the tag to handling function with partial
             # Handle '+' button click
             if operation == '+':
-                self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, 'weight'] += 0.1
+                weight = self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, 'weight']
+                weight_digit = try_float(weight)
+                if weight_digit is not None:
+                    weight_digit += 0.1
+                else:
+                    weight_digit = 1.1
+                self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, 'weight'] = weight_digit
             elif operation == '-':
-                self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, 'weight'] -= 0.1
+                weight = self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, 'weight']
+                weight_digit = try_float(weight)
+                if weight_digit is not None:
+                    weight_digit -= 0.1
+                else:
+                    weight_digit = 0.9
+                self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, 'weight'] = weight_digit
             else:
                 raise ValueError(f'Invalid operation: {operation}')
             self.update_row_weight(row)
@@ -447,7 +461,7 @@ class TagEditTableWidget(QTableWidget):
 
     def update_table(self):
         TagManager.dataframe_to_table_widget(
-            self, self.table_editing_data, self.filed_declare, ['', ''], self.df_to_table_decorator)
+            self, self.table_editing_data, self.filed_declare, ['', ''])  # , self.df_to_table_decorator)
 
         for row in range(self.rowCount()):
             plus_button = QPushButton('+')
@@ -469,35 +483,36 @@ class TagEditTableWidget(QTableWidget):
             self.resizeColumnToContents(len(self.filed_declare))
             self.resizeColumnToContents(len(self.filed_declare) + 1)
 
-    def df_to_table_decorator(self, row, col, item: QTableWidgetItem):
-        if col == 1:
-            tag_item = self.item(row, 0)
-            tag = tag_item.text()
-            # Find the weight value in dataframe by tag field
-            weight_value = int(self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, 'weight'].values[0])
-            # Format the new_value to a string with 2 decimal places
-            weight_value_str = self.format_weight(weight_value)
-            # Update the weight value to col 2 of table row
-            item.setText(weight_value_str)
-        else:
-            pass
+    # def df_to_table_decorator(self, row, col, item: QTableWidgetItem):
+    #     if col == 1:
+    #         tag_item = self.item(row, 0)
+    #         tag = tag_item.text()
+    #         # Find the weight value in dataframe by tag field
+    #         weight_value = int(
+    #             self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, 'weight'].values[0])
+    #         # Format the new_value to a string with 2 decimal places
+    #         weight_value_str = self.format_weight(weight_value)
+    #         # Update the weight value to col 2 of table row
+    #         item.setText(weight_value_str)
+    #     else:
+    #         pass
 
     def update_row_weight(self, row):
         tag_item = self.item(row, 0)
         tag = tag_item.text()
         # Find the weight value in dataframe by tag field
         weight_value = self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, 'weight'].values[0]
-        weight_value_str = self.format_weight(weight_value)
+        weight_value_str = format_float(weight_value)
         # Update the weight value to col 2 of table row
         weight_item = QTableWidgetItem(str(weight_value_str))
         self.setItem(row, 1, weight_item)
 
-    def format_weight(self, weight_level: int) -> str:
-        if weight_level >= 0:
-            weight_value = WEIGHT_INC_BASE ** weight_level
-        else:
-            weight_value = WEIGHT_DEC_BASE ** abs(weight_level)
-        return '{:.2f}'.format(weight_value)
+    # def format_weight(self, weight_level: int) -> str:
+    #     if weight_level >= 0:
+    #         weight_value = WEIGHT_INC_BASE ** weight_level
+    #     else:
+    #         weight_value = WEIGHT_DEC_BASE ** abs(weight_level)
+    #     return '{:.2f}'.format(weight_value)
 
 
 class CustomPlainTextEdit(QPlainTextEdit):
