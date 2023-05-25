@@ -8,6 +8,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBo
     QGroupBox, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QAbstractItemView, QDialog, QPushButton, \
     QDialogButtonBox, QCheckBox, QMessageBox, QMenu, QAction
 
+from Prompts import Prompts
 from SaveTagsWindow import SaveTagsDialog
 from defines import ANALYSIS_README, PRESET_TAG_PATH, ANALYSIS_SHOW_COLUMNS
 from df_utility import *
@@ -21,11 +22,14 @@ class AnalyserWindow(QWidget):
         super().__init__()
 
         self.tag_manager = tag_manager
+        self.prompts = Prompts()
+
         # self.tag_manager.register_database_observer(self)
 
-        self.positive_tags = []
-        self.negative_tags = []
-        self.extra_data = ''
+        # self.positive_tags = []
+        # self.negative_tags = []
+        # self.extra_data = ''
+
         self.positive_df = pd.DataFrame(columns=DATABASE_FIELDS)
         self.negative_df = pd.DataFrame(columns=DATABASE_FIELDS)
 
@@ -170,9 +174,10 @@ class AnalyserWindow(QWidget):
 
     # Define a function to be called when the text in self.text_edit changes
     def on_prompt_edit(self):
-        # Call parse_prompts with the input of self.text_edit
-        self.positive_tags, self.negative_tags, self.extra_data = \
-            TagManager.parse_prompts(self.text_edit.toPlainText())
+        self.prompts.from_text(self.text_edit.toPlainText())
+        # # Call parse_prompts with the input of self.text_edit
+        # self.positive_tags, self.negative_tags, self.extra_data = \
+        #     TagManager.parse_prompts(self.text_edit.toPlainText())
         self.rebuild_analysis_table(True, True, True)
 
     def parse_extra_info(self, text: str):
@@ -265,7 +270,7 @@ class AnalyserWindow(QWidget):
                         if self.positive_table.item(row, 0).checkState() == Qt.Checked]
 
         if len(checked_tags) > 0:
-            extras = self.parse_extra_info(self.extra_data)
+            extras = self.parse_extra_info(self.prompts.extra_data)
             extras_str = '\n'.join([f"{key}: {value}" for key, value in extras.items()])
 
             dlg = SaveTagsDialog()
@@ -356,31 +361,25 @@ class AnalyserWindow(QWidget):
         # If the tag not in tag_database, the columns are empty string. The same to negative_df.
 
         if positive:
-            positive_tag_data_dict = TagManager.tags_list_to_tag_data(unique_list(self.positive_tags))
             if not self.tag_manager.get_database().empty:
-                positive_translate_df = self.positive_df[[PRIMARY_KEY, 'translate_cn']].copy()
-                self.positive_df = pd.DataFrame(positive_tag_data_dict)
+                self.positive_df = pd.DataFrame(self.prompts.positive_tag_data_dict)
                 self.positive_df = merge_df_keeping_left_value(
                     self.positive_df, self.tag_manager.get_database(), PRIMARY_KEY)
-                self.positive_df = update_df_from_right_value_if_empty(self.positive_df, positive_translate_df,
-                                                                       PRIMARY_KEY)
+                translate_df(self.positive_df, PRIMARY_KEY, 'translate_cn', True, True)
             else:
-                self.positive_df = pd.DataFrame(positive_tag_data_dict, columns=DATABASE_FIELDS).fillna('')
+                self.positive_df = pd.DataFrame(self.prompts.positive_tag_data_dict, columns=DATABASE_FIELDS).fillna('')
             if refresh_ui:
                 TagManager.dataframe_to_table_widget(
                     self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [], self.df_to_table_decorator)
 
         if negative:
-            negative_tag_data_dict = TagManager.tags_list_to_tag_data(unique_list(self.negative_tags))
             if not self.tag_manager.get_database().empty:
-                negative_translate_df = self.negative_df[[PRIMARY_KEY, 'translate_cn']].copy()
-                self.negative_df = pd.DataFrame(negative_tag_data_dict)
+                self.negative_df = pd.DataFrame(self.prompts.negative_tag_data_dict)
                 self.negative_df = merge_df_keeping_left_value(
                     self.negative_df, self.tag_manager.get_database(), PRIMARY_KEY)
-                self.negative_df = update_df_from_right_value_if_empty(self.negative_df, negative_translate_df,
-                                                                       PRIMARY_KEY)
+                translate_df(self.negative_df, PRIMARY_KEY, 'translate_cn', True, True)
             else:
-                self.negative_df = pd.DataFrame(negative_tag_data_dict, columns=DATABASE_FIELDS).fillna('')
+                self.negative_df = pd.DataFrame(self.prompts.negative_tag_data_dict, columns=DATABASE_FIELDS).fillna('')
             if refresh_ui:
                 TagManager.dataframe_to_table_widget(
                     self.negative_table, self.negative_df, ANALYSIS_SHOW_COLUMNS, [], self.df_to_table_decorator)

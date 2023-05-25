@@ -33,7 +33,7 @@ def youdao_translate(query, from_lang='AUTO', to_lang='AUTO'):
 translate_cache = {}
 
 
-def translate_df(df, text_field, trans_field, use_cache: bool) -> bool:
+def translate_df(df, text_field, trans_field, use_cache: bool, offline: bool = False) -> bool:
     """
     Translates the text in the specified text_field of each row of the dataframe using youdao_translate function
     and fills the result to the specified trans_field if the trans_field is empty string.
@@ -43,22 +43,23 @@ def translate_df(df, text_field, trans_field, use_cache: bool) -> bool:
         df (pandas.DataFrame): The dataframe to translate.
         text_field (str): The name of the field containing the text to translate.
         trans_field (str): The name of the field to fill with the translation.
-        use_cache (bool): If yes. Use cache else always do translation.
+        use_cache (bool): If True. Use cache else always do translation.
+        offline (bool): If True. Only use cache for translation
 
     Returns:
         None
     """
 
-    def translate_text(row):
+    def translate_text(row) -> str:
         if not row[trans_field]:
             original_text = row[text_field]
-            if use_cache:
-                if original_text not in translate_cache:
-                    translate_cache[original_text] = youdao_translate(original_text)
+            translated_text = None
+            if use_cache and original_text in translate_cache.keys():
                 translated_text = translate_cache[original_text]
-            else:
-                translated_text = youdao_translate(original_text)
-            return translated_text
+            if translated_text is None and not offline:
+                translated_text = translate_cache[original_text]
+                translate_cache[original_text] = translated_text
+            return '' if translated_text is None else translated_text
         return row[trans_field]
 
     if not df.empty:

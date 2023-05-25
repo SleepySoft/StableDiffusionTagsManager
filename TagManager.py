@@ -21,86 +21,6 @@ DATABASE_SUPPORT_FIELD = OrderedDict([
 DATABASE_FIELDS = list(DATABASE_SUPPORT_FIELD.keys())
 
 
-def try_float(text: str) -> float or None:
-    try:
-        return float(text)
-    except ValueError:
-        return None
-    finally:
-        pass
-
-
-def parse_wrapper(tag: str, left: str, right: str, base: float) -> (str, float):
-    tag = tag.strip()
-    if tag.startswith(left):  # and tag.endswith(right):
-        n = tag.count(left)
-        weight = base ** n
-    else:
-        weight = 1.0
-    return tag.replace(left, '').replace(right, ''), weight
-
-
-def analysis_tag(tag: str):
-    weight_list = []
-    tag_list = []
-    if tag.startswith('['):
-        raw_tag, weight = parse_wrapper(tag, '[', ']', 0.9)
-        tag_list.append(raw_tag)
-        weight_list.append(weight)
-    elif tag.startswith('{'):
-        raw_tag, weight = parse_wrapper(tag, '{', '}', 1.1)
-        tag_list.append(raw_tag)
-        weight_list.append(weight)
-    elif tag.startswith('('):
-        if ':' in tag:
-            sub_tags = tag.replace('(', '').replace(')', '').split(':')
-            for sub_tag in sub_tags:
-                weight = try_float(sub_tag)
-                if weight:
-                    weight_list.append(weight)
-                else:
-                    tag_list.append(sub_tag)
-        else:
-            raw_tag, weight = parse_wrapper(tag, '(', ')', 1.1)
-            tag_list.append(raw_tag)
-            weight_list.append(weight)
-    elif tag.startswith('<'):
-        sub_tags = tag.replace('<', '').replace('>', '').split(':')
-
-        weight = try_float(sub_tags[2]) if len(sub_tags) > 2 else None
-        weight = 1.0 if weight is None else weight
-        raw_tag = sub_tags[0] + ':' + sub_tags[1] if len(sub_tags) > 1 else sub_tags[0]
-
-        tag_list.append(raw_tag)
-        weight_list.append(weight)
-    else:
-        tag_list.append(tag)
-        weight_list.append(1.0)
-
-    return tag_list, weight_list
-
-
-print(analysis_tag("<lora:add_detail:1.5>"))
-print(analysis_tag("<lora:add_detail>"))
-print(analysis_tag("<lora"))
-
-print(analysis_tag("tag"))
-print(analysis_tag("(tag:1.2)"))
-print(analysis_tag("(tag1:tag2:1.1:1.2)"))
-
-print(analysis_tag("(abc)"))
-print(analysis_tag("((abc))"))
-print(analysis_tag("(((abc)))"))
-
-print(analysis_tag("{def}"))
-print(analysis_tag("{{def}}"))
-print(analysis_tag("{{{def}}}"))
-
-print(analysis_tag("[xyz]"))
-print(analysis_tag("[[xyz]]"))
-print(analysis_tag("[[[xyz]]]"))
-
-
 class TagManager:
     def __init__(self, public_db: str, private_db: str, backup_limit: int):
         self.__public_db = public_db
@@ -205,128 +125,64 @@ class TagManager:
         df_public.to_csv(public_db, index=False, encoding='utf-8')
         df_private.to_csv(private_db, index=False, encoding='utf-8')
 
-    @staticmethod
-    def parse_prompts(prompt_text: str):
-        return TagManager.parse_prompts_2(prompt_text)
+    # @staticmethod
+    # def parse_prompts(prompt_text: str):
+    #     # Split the prompt_text by '\n' and strip each line, remove empty lines
+    #     lines = [line.strip() for line in prompt_text.split('\n') if line.strip()]
+    #
+    #     def trim_colon(text: str) -> str:
+    #         i1 = text.find(',')
+    #         i2 = text.find(':')
+    #         if 0 <= i2 < i1:
+    #             text = text[text.index(':') + 1:]
+    #         return text
+    #
+    #     # Split line 0 by ',' and strip each sub string. line 0 is positive_tags, line 1 is negative_tags.
+    #     positive_tags = [tag.strip() for tag in trim_colon(lines[0]).split(',')] if len(lines) > 0 else []
+    #     negative_tags = [tag.strip() for tag in trim_colon(lines[1]).split(',')] if len(lines) > 1 else []
+    #
+    #     # Join the rest lines by '\n' as extra_data. If no more lines extra_data should be empty string.
+    #     extra_data = '\n'.join(lines[2:]) if len(lines) > 2 else ''
+    #
+    #     # Return positive_tags, negative_tags, extra_data
+    #     return positive_tags, negative_tags, extra_data
 
-    @staticmethod
-    def parse_prompts_1(prompt_text: str):
-        # Split the prompt_text by '\n' and strip each line, remove empty lines
-        lines = [line.strip() for line in prompt_text.split('\n') if line.strip()]
-
-        def trim_colon(text: str) -> str:
-            i1 = text.find(',')
-            i2 = text.find(':')
-            if 0 <= i2 < i1:
-                text = text[text.index(':') + 1:]
-            return text
-
-        # Split line 0 by ',' and strip each sub string. line 0 is positive_tags, line 1 is negative_tags.
-        positive_tags = [tag.strip() for tag in trim_colon(lines[0]).split(',')] if len(lines) > 0 else []
-        negative_tags = [tag.strip() for tag in trim_colon(lines[1]).split(',')] if len(lines) > 1 else []
-
-        # Join the rest lines by '\n' as extra_data. If no more lines extra_data should be empty string.
-        extra_data = '\n'.join(lines[2:]) if len(lines) > 2 else ''
-
-        # Return positive_tags, negative_tags, extra_data
-        return positive_tags, negative_tags, extra_data
-
-    @staticmethod
-    def parse_prompts_2(prompt_text: str):
-        prompt_text = prompt_text.strip()
-        lines = prompt_text.split('\n')
-        lines = [line for line in lines if line.strip() != '']
-        prompt_text = '\n'.join(lines)
-
-        positive_start = prompt_text.lower().find('positive prompt')
-        if positive_start != -1:
-            positive_start = prompt_text.find(':', positive_start) + 1
-        else:
-            positive_start = 0
-
-        negative_start = prompt_text.lower().find('negative prompt')
-        if negative_start != -1:
-            positive_end = negative_start
-            negative_start = prompt_text.find(':', negative_start) + 1
-            negative_end = prompt_text.find('\n', negative_start)
-        else:
-            first_line_end = prompt_text.find('\n')
-            positive_end = first_line_end if first_line_end > 0 else len(prompt_text)
-            negative_start = positive_end
-            negative_end = positive_end
-
-        positive_tags_string = prompt_text[positive_start:positive_end].strip()
-        negative_tags_string = prompt_text[negative_start:negative_end].strip()
-        extra_data_string = prompt_text[negative_end + 1:].strip()
-
-        # print('Positive tags:', positive_tags_string)
-        # print('Negative tags:', negative_tags_string)
-        # print('Extra data:', extra_data_string)
-
-        positive_tags_raw = positive_tags_string.replace('\n', ',').split(',')
-        negative_tags_raw = negative_tags_string.replace('\n', ',').split(',')
-
-        positive_tags = [tag.strip() for tag in positive_tags_raw if tag.strip() != '']
-        negative_tags = [tag.strip() for tag in negative_tags_raw if tag.strip() != '']
-
-        return positive_tags, negative_tags, extra_data_string
-
-    @staticmethod
-    def analysis_tag(tag: str) -> (str, str):
-        # Check if the tag contains ":"
-        if ":" in tag:
-            # Remove the "()" surrounding the ":" if they exist
-            tag = tag.strip("()")
-            # Split the tag by ":" and check if the second part is a number
-            parts = tag.split(":")
-            try:
-                # If the second part is a number, set the raw_tag and tag_weight accordingly
-                raw_tag = parts[0]
-                tag_weight = float(parts[1])
-            except Exception:
-                # If the second part is not a number, set the raw_tag to the entire tag and tag_weight to 1
-                raw_tag = tag
-                tag_weight = 1.0
-            finally:
-                pass
-        # Check if the tag contains "|"
-        elif "|" in tag:
-            # If the tag contains "|", set the raw_tag to the entire tag and tag_weight to 1
-            raw_tag = tag
-            tag_weight = 1.0
-        else:
-            # If the tag does not contain ":" or "|", set the raw_tag to the content after removing all brackets
-            raw_tag = re.sub(r'[\(\)\[\]]', '', tag)
-            # Initialize the tag_weight to 1.0
-            tag_weight = 1.0
-            # Multiply the tag_weight by 1.1 for each layer of "()" surrounding the tag
-            for i in range(tag.count("(")):
-                tag_weight *= 1.1
-            # Multiply the tag_weight by 0.9 for each layer of "[]" surrounding the tag
-            for i in range(tag.count("[")):
-                tag_weight *= 0.9
-        # Return the raw_tag and tag_weight as a tuple
-        return raw_tag.strip(), tag_weight
-
-    @staticmethod
-    def tags_list_to_tag_data(tags: [str]) -> dict:
-        data_tag = []
-        data_weight = []
-        for tag in tags:
-            raw_tag, tag_weight = TagManager.analysis_tag(tag)
-            if len(raw_tag) == 0:
-                continue
-            # Process the duplicate case
-            if raw_tag not in data_tag:
-                data_tag.append(raw_tag)
-                data_weight.append(format_float(tag_weight))
-            else:
-                index = data_tag.index(raw_tag)
-                data_weight[index] = format_float(float(data_weight[index]) * float(tag_weight))
-        return {
-            PRIMARY_KEY: data_tag,
-            'weight': data_weight
-        }
+    # @staticmethod
+    # def analysis_tag(tag: str) -> (str, str):
+    #     # Check if the tag contains ":"
+    #     if ":" in tag:
+    #         # Remove the "()" surrounding the ":" if they exist
+    #         tag = tag.strip("()")
+    #         # Split the tag by ":" and check if the second part is a number
+    #         parts = tag.split(":")
+    #         try:
+    #             # If the second part is a number, set the raw_tag and tag_weight accordingly
+    #             raw_tag = parts[0]
+    #             tag_weight = float(parts[1])
+    #         except Exception:
+    #             # If the second part is not a number, set the raw_tag to the entire tag and tag_weight to 1
+    #             raw_tag = tag
+    #             tag_weight = 1.0
+    #         finally:
+    #             pass
+    #     # Check if the tag contains "|"
+    #     elif "|" in tag:
+    #         # If the tag contains "|", set the raw_tag to the entire tag and tag_weight to 1
+    #         raw_tag = tag
+    #         tag_weight = 1.0
+    #     else:
+    #         # If the tag does not contain ":" or "|", set the raw_tag to the content after removing all brackets
+    #         raw_tag = re.sub(r'[\(\)\[\]]', '', tag)
+    #         # Initialize the tag_weight to 1.0
+    #         tag_weight = 1.0
+    #         # Multiply the tag_weight by 1.1 for each layer of "()" surrounding the tag
+    #         for i in range(tag.count("(")):
+    #             tag_weight *= 1.1
+    #         # Multiply the tag_weight by 0.9 for each layer of "[]" surrounding the tag
+    #         for i in range(tag.count("[")):
+    #             tag_weight *= 0.9
+    #     # Return the raw_tag and tag_weight as a tuple
+    #     return raw_tag.strip(), tag_weight
 
     @staticmethod
     def dataframe_to_table_widget(
@@ -422,15 +278,3 @@ class TagManager:
         tree_widget.expandAll()
 
 
-class Prompts:
-    def __init__(self):
-        self.positive_tags = pd.DataFrame(columns=DATABASE_FIELDS)
-        self.negative_tags = pd.DataFrame(columns=DATABASE_FIELDS)
-        self.extra_data = ''
-
-    def from_text(self, text: str) -> bool:
-        self.positive_tags, self.negative_tags, self.extra_data = TagManager.parse_prompts(text)
-
-    def from_file(self, file_name: str) -> bool:
-        with open(file_name, 'rt') as f:
-            return self.from_text(f.read())
