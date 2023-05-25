@@ -4,6 +4,9 @@ from TagManager import DATABASE_FIELDS, PRIMARY_KEY
 from app_utility import *
 
 
+SPECIAL_KEYWORDS = ['BREAK']
+
+
 def try_float(text: str) -> float or None:
     try:
         return float(text)
@@ -103,6 +106,9 @@ class Prompts:
 
         positive_tags_string = prompt_text[positive_start:positive_end].strip()
         negative_tags_string = prompt_text[negative_start:negative_end].strip()
+        for keyword in SPECIAL_KEYWORDS:
+            positive_tags_string = positive_tags_string.replace(keyword, ',')
+            negative_tags_string = negative_tags_string.replace(keyword, ',')
         extra_data_string = prompt_text[negative_end + 1:].strip()
 
         # print('Positive tags:', positive_tags_string)
