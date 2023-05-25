@@ -7,6 +7,10 @@ from app_utility import *
 SPECIAL_KEYWORDS = ['BREAK']
 
 
+WEIGHT_INC_BASE = 1.1
+WEIGHT_DEC_BASE = 0.9
+
+
 def try_float(text: str) -> float or None:
     try:
         return float(text)
@@ -132,6 +136,9 @@ class Prompts:
             if len(raw_tags) == 0:
                 continue
             for raw_tag, tag_weight in zip(raw_tags, tag_weights):
+                raw_tag = raw_tag.strip()
+                if raw_tag == '':
+                    continue
                 # Process the duplicate case
                 if raw_tag not in data_tag:
                     data_tag.append(raw_tag)
@@ -149,11 +156,11 @@ class Prompts:
         weight_list = []
         tag_list = []
         if tag.startswith('['):
-            raw_tag, weight = parse_wrapper(tag, '[', ']', 0.9)
+            raw_tag, weight = parse_wrapper(tag, '[', ']', WEIGHT_DEC_BASE)
             tag_list.append(raw_tag)
             weight_list.append(weight)
         elif tag.startswith('{'):
-            raw_tag, weight = parse_wrapper(tag, '{', '}', 1.1)
+            raw_tag, weight = parse_wrapper(tag, '{', '}', WEIGHT_INC_BASE)
             tag_list.append(raw_tag)
             weight_list.append(weight)
         elif tag.startswith('('):
@@ -166,7 +173,7 @@ class Prompts:
                     else:
                         tag_list.append(sub_tag)
             else:
-                raw_tag, weight = parse_wrapper(tag, '(', ')', 1.1)
+                raw_tag, weight = parse_wrapper(tag, '(', ')', WEIGHT_INC_BASE)
                 tag_list.append(raw_tag)
                 weight_list.append(weight)
         elif tag.startswith('<'):

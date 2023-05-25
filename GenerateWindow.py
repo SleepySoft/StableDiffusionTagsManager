@@ -84,7 +84,7 @@ class GenerateWindow(QMainWindow):
         group_tags_view_layout = QVBoxLayout()
         group_tags_view.setLayout(group_tags_view_layout)
 
-        self.tag_table = TagViewTableWidget()
+        self.tag_table = TagViewTableWidget(list(GENERATE_SHOW_COLUMNS.keys()))
         self.tag_table.setColumnCount(2)
         self.tag_table.setRowCount(0)
         self.tag_table.horizontalHeader().setSectionsClickable(True)
@@ -191,76 +191,6 @@ class GenerateWindow(QMainWindow):
         self.setCentralWidget(root_widget)
 
         root_layout.addWidget(right_widget, 45)
-
-        # # Create the right vertical layout
-        # right_layout = QVBoxLayout()
-        #
-        # # Create the top group view named "Action"
-        # action_view = QGroupBox("Action")
-        # action_view_layout = QVBoxLayout()
-        #
-        # # Create a button named "生成"
-        # generate_button = QPushButton("生成", self)
-        # # Connect the button to the on_generate function
-        # generate_button.clicked.connect(self.do_generate)
-        # # Add the button to the action_view_layout
-        # action_view_layout.addWidget(generate_button)
-        #
-        # action_view.setLayout(action_view_layout)
-        # right_layout.addWidget(action_view, 20)
-        #
-        # # Create the group view named "Positive" that wraps a multiple line text editor
-        # positive_view = QGroupBox("正向Tag")
-        # positive_view_layout = QVBoxLayout()
-        #
-        # self.positive_table = TagEditTableWidget(self.tag_manager, GENERATE_EDIT_COLUMNS)
-        #
-        # self.positive_table.horizontalHeader().setSectionsClickable(True)
-        # self.positive_table.horizontalHeader().sectionClicked.connect(self.positive_table.sortByColumn)
-        #
-        # self.positive_table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        # self.positive_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        # self.positive_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        #
-        # self.positive_table.cellDoubleClicked.connect(self.on_tag_table_double_click)
-        # self.positive_table.setContextMenuPolicy(Qt.CustomContextMenu)
-        # self.positive_table.customContextMenuRequested.connect(self.on_positive_table_right_click)
-        #
-        # positive_view_layout.addWidget(self.positive_table)
-        # positive_view.setLayout(positive_view_layout)
-        # right_layout.addWidget(positive_view, 50)
-        #
-        # # Create the group view named "Negative" that wraps a multiple line text editor
-        # negative_view = QGroupBox("反向Tag")
-        # negative_view_layout = QVBoxLayout()
-        #
-        # self.negative_table = TagEditTableWidget(self.tag_manager, GENERATE_EDIT_COLUMNS)
-        #
-        # self.negative_table.horizontalHeader().setSectionsClickable(True)
-        # self.negative_table.horizontalHeader().sectionClicked.connect(self.negative_table.sortByColumn)
-        #
-        # self.negative_table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        # self.negative_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        # self.negative_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        #
-        # self.negative_table.cellDoubleClicked.connect(self.on_tag_table_double_click)
-        # self.negative_table.setContextMenuPolicy(Qt.CustomContextMenu)
-        # self.negative_table.customContextMenuRequested.connect(self.on_negative_table_right_click)
-        #
-        # negative_view_layout.addWidget(self.negative_table)
-        # negative_view.setLayout(negative_view_layout)
-        # right_layout.addWidget(negative_view, 30)
-
-        # Set the weight of the right layout to 40%
-        # right_layout.setContentsMargins(0, 0, 0, 0)
-        # right_widget = QWidget()
-        # right_widget.setLayout(right_layout)
-        # root_layout.addWidget(right_widget, 40)
-        #
-        # # Set the root layout
-        # root_widget = QWidget()
-        # root_widget.setLayout(root_layout)
-        # self.setCentralWidget(root_widget)
 
     def on_widget_activated(self):
         self.refresh_depot_tree()

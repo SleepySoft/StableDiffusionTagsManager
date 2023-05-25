@@ -1,3 +1,4 @@
+import math
 from collections import OrderedDict
 from functools import partial
 
@@ -8,7 +9,9 @@ from PyQt5.QtGui import QDrag
 from PyQt5.QtWidgets import QVBoxLayout, QTableWidget, QTableWidgetItem, QTreeWidget, QAbstractItemView, QDialog, \
     QPushButton, QDialogButtonBox, QTreeWidgetItem, QPlainTextEdit
 
+from Prompts import try_float, WEIGHT_INC_BASE, WEIGHT_DEC_BASE
 from TagManager import PRIMARY_KEY, TagManager
+from df_utility import translate_df
 
 
 class DataFrameRowEditDialog(QDialog):
@@ -185,8 +188,9 @@ class DraggableTree(QTreeWidget):
 
 
 class TagViewTableWidget(QTableWidget):
-    def __init__(self, parent=None):
+    def __init__(self, data_columns: list, parent=None):
         super().__init__(parent)
+        self.data_columns = data_columns
         self.setDragEnabled(True)
         self.setAcceptDrops(False)
         self.setDragDropMode(QAbstractItemView.DragDrop)
@@ -202,16 +206,31 @@ class TagViewTableWidget(QTableWidget):
         event.ignore()
 
     def mimeData(self, indexes):
-        # Get the data from the first column of the selected rows
+        # Get the data from the selected rows
         selected_data = []
         for index in indexes:
             if index.column() == 0:
-                item = self.item(index.row(), index.column())
-                selected_data.append(item.text())
+                row_data = {}
+                for column in range(self.columnCount()):
+                    item = self.item(index.row(), column)
+                    row_data[self.data_columns[column]] = item.text()
+                selected_data.append(row_data)
         # Create a mime data object and set the data
         mime_data = QMimeData()
         mime_data.setData('text/plain', str(selected_data).encode())
         return mime_data
+
+    # def mimeData(self, indexes):
+    #     # Get the data from the first column of the selected rows
+    #     selected_data = []
+    #     for index in indexes:
+    #         if index.column() == 0:
+    #             item = self.item(index.row(), index.column())
+    #             selected_data.append(item.text())
+    #     # Create a mime data object and set the data
+    #     mime_data = QMimeData()
+    #     mime_data.setData('text/plain', str(selected_data).encode())
+    #     return mime_data
 
     # startDrag方法的supportedActions参数是一个标志，它指定了拖放操作期间支持的操作。
     # 这些操作可以是Qt.CopyAction、Qt.MoveAction、Qt.LinkAction或它们的组合。
@@ -278,16 +297,30 @@ class TagEditTableWidget(QTableWidget):
             # External drop
 
             data = event.mimeData().data('text/plain').data().decode()
-            tags = eval(data)
+            tag_data = eval(data)
 
             append_rows = []
-            for tag in tags:
+            for data in tag_data:
+                tag = data[PRIMARY_KEY]
+                weight = data.get('weight', '')
+                if weight == '':
+                    weight = 1
+
+                # weight_digit = try_float(weight)
+                # if weight_digit is None:
+                #     weight_log = 0
+                # else:
+                #     weight_log = math.log(weight_digit, 1.1) if weight_digit > 1 else math.log(weight_digit, 0.9)
+
+                # TODO: Dynamic
                 if not self.table_editing_data[PRIMARY_KEY].isin([tag]).any():
-                    trans = self.tag_manager.get_property(tag, 'translate_cn')
-                    append_rows.append([tag, 0, trans] + [''] * (len(self.filed_declare) - 3))
+                    # trans = self.tag_manager.get_property(tag, 'translate_cn')
+                    append_rows.append([tag, weight, ''] + [''] * (len(self.filed_declare) - 3))
+
             self.table_editing_data = self.table_editing_data.append(
                 pd.DataFrame(append_rows, columns=self.table_editing_data.columns))
             self.table_editing_data = self.table_editing_data.reset_index(drop=True)
+            translate_df(self.table_editing_data, PRIMARY_KEY, 'translate_cn', True, True)
             event.accept()
         self.update_table()
 
@@ -372,11 +405,13 @@ class TagEditTableWidget(QTableWidget):
         for index, row in df_flat_tags.iterrows():
             tag = row['tag']
             weight = int(row['weight'])
-            # If the weight is 1, than it's (tag), if 2 than ((tag)) and so on.
-            if weight > 0:
-                tag = f"{'(' * weight}{tag}{')' * weight}"
-            elif weight < 0:
-                tag = f"{'[' * abs(weight)}{tag}{']' * abs(weight)}"
+
+            # # If the weight is 1, than it's (tag), if 2 than ((tag)) and so on.
+            # if weight > 0:
+            #     tag = f"{'(' * weight}{tag}{')' * weight}"
+            # elif weight < 0:
+            #     tag = f"{'[' * abs(weight)}{tag}{']' * abs(weight)}"
+            
             flat_tags.append(tag)
 
         with open(file_name, 'w') as f:
@@ -393,9 +428,9 @@ class TagEditTableWidget(QTableWidget):
             # Pass the tag to handling function with partial
             # Handle '+' button click
             if operation == '+':
-                self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, 'weight'] += 1
+                self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, 'weight'] += 0.1
             elif operation == '-':
-                self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, 'weight'] -= 1
+                self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, 'weight'] -= 0.1
             else:
                 raise ValueError(f'Invalid operation: {operation}')
             self.update_row_weight(row)
@@ -459,9 +494,9 @@ class TagEditTableWidget(QTableWidget):
 
     def format_weight(self, weight_level: int) -> str:
         if weight_level >= 0:
-            weight_value = 1.0 * (1.05 ** weight_level)
+            weight_value = WEIGHT_INC_BASE ** weight_level
         else:
-            weight_value = 1.0 * (0.95 ** abs(weight_level))
+            weight_value = WEIGHT_DEC_BASE ** abs(weight_level)
         return '{:.2f}'.format(weight_value)
 
 

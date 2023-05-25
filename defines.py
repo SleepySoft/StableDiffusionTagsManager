@@ -14,7 +14,7 @@ for f in ANALYSIS_DISPLAY_FIELD:
     ANALYSIS_SHOW_COLUMNS[f] = DATABASE_SUPPORT_FIELD[f]
 ANALYSIS_SHOW_COLUMNS['weight'] = '权重'
 
-GENERATE_DISPLAY_FIELD = [PRIMARY_KEY, 'path', 'value', 'translate_cn', 'label', 'comments']
+GENERATE_DISPLAY_FIELD = [PRIMARY_KEY, 'weight', 'path', 'value', 'translate_cn', 'label', 'comments']
 
 GENERATE_SHOW_COLUMNS = OrderedDict()
 for f in GENERATE_DISPLAY_FIELD:
