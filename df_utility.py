@@ -57,7 +57,7 @@ def translate_df(df, text_field, trans_field, use_cache: bool, offline: bool = F
             if use_cache and original_text in translate_cache.keys():
                 translated_text = translate_cache[original_text]
             if translated_text is None and not offline:
-                translated_text = translate_cache[original_text]
+                translated_text = youdao_translate(original_text)
                 translate_cache[original_text] = translated_text
             return '' if translated_text is None else translated_text
         return row[trans_field]

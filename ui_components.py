@@ -149,8 +149,9 @@ class DraggableTree(QTreeWidget):
         if mime_data.hasFormat('text/plain'):
             # Get the data as bytes and convert to string
             data = bytes(mime_data.data('text/plain')).decode()
+            data_dict = eval(data)
             # Convert the string back to a list
-            selected_data = [tag.strip() for tag in eval(data) if len(tag.strip()) > 0]
+            selected_data = [item[PRIMARY_KEY].strip() for item in data_dict if len(item[PRIMARY_KEY].strip()) > 0]
 
             if len(selected_data) > 0:
                 # Get the tree node it dropped on

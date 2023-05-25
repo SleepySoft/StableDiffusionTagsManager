@@ -30,6 +30,15 @@ def parse_wrapper(tag: str, left: str, right: str, base: float) -> (str, float):
     return tag.replace(left, '').replace(right, ''), weight
 
 
+def parse_tag_colon_weight(tag: str) -> (str, float):
+    if ':' in tag:
+        parts = tag.split(':')
+        weight = try_float(parts[1])
+        return parts[0], (weight if weight else 1.0)
+    else:
+        return tag, 1.0
+
+
 class Prompts:
     def __init__(self):
         self.positive_tag_data_dict = {PRIMARY_KEY: [], 'weight': []}
@@ -40,8 +49,14 @@ class Prompts:
         return self.parse_prompt_text(text)
 
     def from_file(self, file_name: str) -> bool:
-        with open(file_name, 'rt') as f:
-            return self.from_text(f.read())
+        try:
+            with open(file_name, 'rt') as f:
+                return self.from_text(f.read())
+        except Exception as e:
+            print(e)
+            return False
+        finally:
+            pass
 
     def parse_prompt_text(self, text: str):
         positive_tags, negative_tags, self.extra_data_string = Prompts.parse_prompts(text)
@@ -155,15 +170,18 @@ class Prompts:
     def analysis_tag(tag: str):
         weight_list = []
         tag_list = []
-        if tag.startswith('['):
+        if tag.startswith('[') or tag.endswith(']'):
             raw_tag, weight = parse_wrapper(tag, '[', ']', WEIGHT_DEC_BASE)
-            tag_list.append(raw_tag)
-            weight_list.append(weight)
-        elif tag.startswith('{'):
+            pure_tag, weight2 = parse_tag_colon_weight(raw_tag)
+            tag_list.append(pure_tag)
+            weight_list.append(weight * weight2)
+        elif tag.startswith('{') or tag.endswith('}'):
             raw_tag, weight = parse_wrapper(tag, '{', '}', WEIGHT_INC_BASE)
-            tag_list.append(raw_tag)
-            weight_list.append(weight)
-        elif tag.startswith('('):
+            pure_tag, weight2 = parse_tag_colon_weight(raw_tag)
+            tag_list.append(pure_tag)
+            weight_list.append(weight * weight2)
+        elif tag.startswith('(') or tag.endswith(')'):
+            # TODO: Cannot parse (A, B, C: weight)
             if ':' in tag:
                 sub_tags = tag.replace('(', '').replace(')', '').split(':')
                 for sub_tag in sub_tags:
@@ -174,8 +192,9 @@ class Prompts:
                         tag_list.append(sub_tag)
             else:
                 raw_tag, weight = parse_wrapper(tag, '(', ')', WEIGHT_INC_BASE)
-                tag_list.append(raw_tag)
-                weight_list.append(weight)
+                pure_tag, weight2 = parse_tag_colon_weight(raw_tag)
+                tag_list.append(pure_tag)
+                weight_list.append(weight * weight2)
         elif tag.startswith('<'):
             sub_tags = tag.replace('<', '').replace('>', '').split(':')
 
@@ -186,8 +205,9 @@ class Prompts:
             tag_list.append(raw_tag)
             weight_list.append(weight)
         else:
+            tag, weight = parse_tag_colon_weight(tag)
             tag_list.append(tag)
-            weight_list.append(1.0)
+            weight_list.append(weight)
 
         return tag_list, weight_list
 

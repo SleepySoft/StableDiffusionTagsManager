@@ -243,7 +243,7 @@ class AnalyserWindow(QWidget):
     def on_button_auto_pick_positive(self):
         for row in range(self.positive_table.rowCount()):
             value = self.positive_table.item(row, 2).text()
-            if value not in ['正向效果', '反向效果', '中立效果', '低价值'] and value != '':
+            if value not in ['正向效果', '反向效果', '中立效果', '低价值', '玄学？', '']:
                 self.positive_table.item(row, 0).setCheckState(Qt.Checked)
 
     def on_button_save_picked_positive(self):
