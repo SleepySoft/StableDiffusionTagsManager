@@ -377,16 +377,33 @@ class GenerateWindow(QMainWindow):
         dlg = SavePromptsDialog(prompt)
         dlg.exec_()
 
+    # def refresh_depot_tree(self):
+    #     self.tree_depot_browse.clear()
+    #     depot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'depot')
+    #     for root, dirs, files in os.walk(depot_path):
+    #         for file in files:
+    #             if file.endswith('.sdtags'):
+    #                 file_path = os.path.join(root, file)
+    #                 item = QTreeWidgetItem(self.tree_depot_browse)
+    #                 item.setText(0, os.path.relpath(file_path, depot_path))
+    #                 item.setData(0, Qt.UserRole, file_path)
+    
+    def add_items(self, parent, path):
+        for name in os.listdir(path):
+            file_path = os.path.join(path, name)
+            if os.path.isdir(file_path):
+                item = QTreeWidgetItem(parent)
+                item.setText(0, name)
+                self.add_items(item, file_path)
+            elif name.endswith('.sdtags'):
+                item = QTreeWidgetItem(parent)
+                item.setText(0, name)
+                item.setData(0, Qt.UserRole, file_path)
+
     def refresh_depot_tree(self):
         self.tree_depot_browse.clear()
         depot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'depot')
-        for root, dirs, files in os.walk(depot_path):
-            for file in files:
-                if file.endswith('.sdtags'):
-                    file_path = os.path.join(root, file)
-                    item = QTreeWidgetItem(self.tree_depot_browse)
-                    item.setText(0, os.path.relpath(file_path, depot_path))
-                    item.setData(0, Qt.UserRole, file_path)
+        self.add_items(self.tree_depot_browse, depot_path)
 
     def on_tree_depot_browse_item_clicked(self, item, column):
         file_path = item.data(0, Qt.UserRole)
