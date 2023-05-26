@@ -371,6 +371,7 @@ class GenerateWindow(QMainWindow):
 
     def do_save(self):
         prompt = Prompts()
+        prompt.from_text(self.text_positive_prompts.toPlainText() + '\n\n' + self.text_negative_prompts.toPlainText())
         # prompt.positive_tag_data_dict = self.positive_table.table_editing_data[[PRIMARY_KEY, 'weight']].to_dict('records')
         # prompt.positive_tag_data_dict = self.negative_table.table_editing_data[[PRIMARY_KEY, 'weight']].to_dict('records')
         dlg = SavePromptsDialog(prompt)

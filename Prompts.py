@@ -129,6 +129,7 @@ class Prompts:
 
         positive_start = prompt_text.lower().find('positive prompt')
         if positive_start != -1:
+            positive_start += len('positive prompt')
             positive_start = prompt_text.find(':', positive_start) + 1
         else:
             positive_start = 0
@@ -136,13 +137,16 @@ class Prompts:
         negative_start = prompt_text.lower().find('negative prompt')
         if negative_start != -1:
             positive_end = negative_start
+            negative_start += len('negative prompt')
             negative_start = prompt_text.find(':', negative_start) + 1
             negative_end = prompt_text.find('\n', negative_start)
         else:
             first_line_end = prompt_text.find('\n')
+            second_line_end = prompt_text.find('\n', first_line_end + 1)
             positive_end = first_line_end if first_line_end > 0 else len(prompt_text)
+
             negative_start = positive_end
-            negative_end = positive_end
+            negative_end = second_line_end if second_line_end > 0 else len(prompt_text)
 
         positive_tags_string = prompt_text[positive_start:positive_end].strip()
         negative_tags_string = prompt_text[negative_start:negative_end].strip()
