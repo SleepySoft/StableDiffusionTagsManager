@@ -1,6 +1,7 @@
 import os
 import glob
 import datetime
+from collections import defaultdict
 
 
 # Do not use set to keep list order
@@ -73,3 +74,16 @@ def backup_file_safe(file_name: str, backup_limit: int) -> bool:
         return False
     finally:
         pass
+
+
+def convert_list_of_dicts(input_list):
+    result = defaultdict(list)
+    max_len = 0
+    for item in input_list:
+        for key, value in item.items():
+            result[key].append(value)
+            max_len = max(max_len, len(result[key]))
+    for key in result:
+        result[key] += [None] * (max_len - len(result[key]))
+    return result
+

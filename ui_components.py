@@ -3,13 +3,14 @@ from collections import OrderedDict
 from functools import partial
 
 import pandas as pd
+from PyQt5 import QtGui
 
 from PyQt5.QtCore import Qt, QMimeData
 from PyQt5.QtGui import QDrag
 from PyQt5.QtWidgets import QVBoxLayout, QTableWidget, QTableWidgetItem, QTreeWidget, QAbstractItemView, QDialog, \
     QPushButton, QDialogButtonBox, QTreeWidgetItem, QPlainTextEdit
 
-from Prompts import try_float, WEIGHT_INC_BASE, WEIGHT_DEC_BASE
+from Prompts import try_float, WEIGHT_INC_BASE, WEIGHT_DEC_BASE, Prompts
 from TagManager import PRIMARY_KEY, TagManager
 from app_utility import format_float
 from df_utility import translate_df
@@ -387,7 +388,18 @@ class TagEditTableWidget(QTableWidget):
                 column_name = self.table_editing_data.columns[column_index]
                 self.table_editing_data.loc[self.table_editing_data[PRIMARY_KEY] == tag, column_name] = data
 
-    def generate(self, file_name: str, wildcards_path: str):
+    def generate_prompts(self) -> str:
+        flat_tags = []
+        for index, row in self.table_editing_data.iterrows():
+            tag = row['tag']
+            weight = row['weight']
+
+            if try_float(weight):
+                tag = '(%s: %s)' % (tag, weight)
+            flat_tags.append(tag)
+        return ', '.join(flat_tags)
+
+    def generate_files(self, file_name: str, wildcards_path: str):
         df_flat_tags = self.table_editing_data[
             self.table_editing_data['shuffle'].isnull() | (self.table_editing_data['shuffle'] == '')]
         df_wildcards = self.table_editing_data[
@@ -516,30 +528,63 @@ class TagEditTableWidget(QTableWidget):
     #     return '{:.2f}'.format(weight_value)
 
 
-class CustomPlainTextEdit(QPlainTextEdit):
-    def __init__(self, parent=None):
+class PromptPlainTextEdit(QPlainTextEdit):
+    def __init__(self, positive_prompts: bool, parent=None):
         super().__init__(parent)
+        self.positive_prompts = positive_prompts
         self.setAcceptDrops(True)
+
+    def set_prompts(self, prompts: Prompts):
+        self.setPlainText(prompts.positive_tag_string(True))
+
+    def get_prompts(self) -> Prompts:
+        prompts = Prompts()
+        prompts.from_text(self.toPlainText())
+        return prompts
+
+    def on_accept_tag_data(self, tag_data: [dict]):
+        new_prompts = Prompts()
+        if not new_prompts.from_record(tag_data, self.positive_prompts):
+            return False
+        now_prompts = Prompts()
+        if now_prompts.from_text(self.toPlainText()):
+            now_prompts.merge(new_prompts)
+            self.setPlainText(
+                now_prompts.positive_tag_string(True)
+                if self.positive_prompts else
+                now_prompts.negative_tag_string(True))
+        else:
+            self.appendPlainText(
+                new_prompts.positive_tag_string(True)
+                if self.positive_prompts else
+                new_prompts.negative_tag_string(True))
 
     def dropEvent(self, event):
         # Get the drop data
         mime_data = event.mimeData()
         if mime_data.hasFormat('text/plain'):
             # Get the data as bytes and convert to string
-            data = bytes(mime_data.data('text/plain')).decode()
-            # Convert the string back to a list
-            selected_data = [tag.strip() for tag in eval(data) if len(tag.strip()) > 0]
-            # Join the values with a comma separator and set the text
-            tags_text = ', '.join(selected_data)
+            raw_data = bytes(mime_data.data('text/plain')).decode()
+            tag_data = eval(raw_data)
 
-            current_text = self.toPlainText().rstrip()
-            if len(current_text) > 0 and current_text[-1] != ',':
-                # Add a comma and the new text
-                new_text = current_text + ', ' + tags_text
-            else:
-                # Add the new text
-                new_text = current_text + tags_text
-            # Set the new text
-            self.setPlainText(new_text)
+            self.on_accept_tag_data(tag_data)
+
+            # # Convert the string back to a list
+            # selected_data = [tag.strip() for tag in eval(data) if len(tag.strip()) > 0]
+            # # Join the values with a comma separator and set the text
+            # tags_text = ', '.join(selected_data)
+            #
+            # current_text = self.toPlainText().rstrip()
+            # if len(current_text) > 0 and current_text[-1] != ',':
+            #     # Add a comma and the new text
+            #     new_text = current_text + ', ' + tags_text
+            # else:
+            #     # Add the new text
+            #     new_text = current_text + tags_text
+            # # Set the new text
+            # self.setPlainText(new_text)
 
             event.acceptProposedAction()
+
+            self.setFocus()
+            self.moveCursor(QtGui.QTextCursor.End)

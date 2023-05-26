@@ -3,19 +3,17 @@ import pandas as pd
 from TagManager import DATABASE_FIELDS, PRIMARY_KEY
 from app_utility import *
 
-
 SPECIAL_KEYWORDS = ['BREAK']
-
 
 WEIGHT_INC_BASE = 1.1
 WEIGHT_DEC_BASE = 0.9
 
 
-def try_float(text: str) -> float or None:
+def try_float(text: str, on_fail: float or None = None) -> float or None:
     try:
         return float(text)
     except ValueError:
-        return None
+        return on_fail
     finally:
         pass
 
@@ -58,6 +56,28 @@ class Prompts:
         finally:
             pass
 
+    def from_record(self, record: [dict], positive: bool) -> bool:
+        try:
+            tag_data_dict = {
+                PRIMARY_KEY: [r[PRIMARY_KEY] for r in record],
+                'weight': [r['weight'] for r in record]
+            }
+            if positive:
+                self.positive_tag_data_dict = tag_data_dict
+            else:
+                self.negative_tag_data_dict = tag_data_dict
+            return True
+        except Exception as e:
+            print(e)
+            return False
+        finally:
+            pass
+
+    def merge(self, other_prompts):
+        Prompts.merge_tag_data_dict(self.positive_tag_data_dict, other_prompts.positive_tag_data_dict)
+        Prompts.merge_tag_data_dict(self.negative_tag_data_dict, other_prompts.negative_tag_data_dict)
+        # self.extra_data_string += other_prompts.extra_data_string
+
     def parse_prompt_text(self, text: str):
         positive_tags, negative_tags, self.extra_data_string = Prompts.parse_prompts(text)
         self.positive_tag_data_dict = Prompts.tags_list_to_tag_data(unique_list(positive_tags))
@@ -76,7 +96,8 @@ class Prompts:
 
     @staticmethod
     def tag_data_dict_to_string(tag_data_dict: dict, includes_weight: bool) -> str:
-        tags_with_weight = [('(%s:%s)' % (t, w) if includes_weight and (w != '') else t)
+        tags_with_weight = [('(%s:%s)' % (t, round(try_float(w, 1.0), 2))
+                             if includes_weight and (w != '') and (try_float(w, 1.0) - 1 > 0.001) else t)
                             for t, w in zip(tag_data_dict[PRIMARY_KEY],
                                             tag_data_dict['weight'])]
         return ', '.join(tags_with_weight)
@@ -211,6 +232,22 @@ class Prompts:
 
         return tag_list, weight_list
 
+    @staticmethod
+    def merge_tag_data_dict(base: dict, update: dict):
+        for tag, weight in zip(update[PRIMARY_KEY], update['weight']):
+            try:
+                if tag in base[PRIMARY_KEY]:
+                    index = base[PRIMARY_KEY].index(tag)
+                    adjust_weight = try_float(base['weight'][index], 1.0) + 0.1  # + try_float(weight, 1.0)- 1.0
+                    base['weight'][index] = max(adjust_weight, 0.1)
+                else:
+                    base[PRIMARY_KEY].append(tag)
+                    base['weight'].append(weight)
+            except Exception as e:
+                print(e)
+            finally:
+                pass
+
 
 def test_parse_tag():
     print(Prompts.analysis_tag("<lora:add_detail:1.5>"))
@@ -232,5 +269,3 @@ def test_parse_tag():
     print(Prompts.analysis_tag("[xyz]"))
     print(Prompts.analysis_tag("[[xyz]]"))
     print(Prompts.analysis_tag("[[[xyz]]]"))
-
-
