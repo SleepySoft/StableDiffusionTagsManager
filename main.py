@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget
 
 from TagManager import TagManager
 from AnalyserWindow import AnalyserWindow
