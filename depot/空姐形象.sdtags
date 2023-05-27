@@ -1,0 +1,17 @@
+stewardess, (stewardess uniform:1.3), (flight attendant uniform:1.2), flight attendant cap, (high_heels:1.1), cross-laced neckerchief, silk scarf
+
+
+Size: 360x640
+Seed: 687635957
+Model: perfectWorld_v4Baked
+Steps: 38
+Sampler: Euler a
+CFG scale: 6.5
+Model hash: 24a393500f
+Hires steps: 10
+Hires upscale: 2
+Hires upscaler: Latent
+Face restoration: CodeFormer
+Denoising strength: 0.7
+
+Comments: 

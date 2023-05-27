@@ -1,0 +1,17 @@
+On the plane, in the cabin, (airplane interior:1.2), in the aisle, in the cockpit seat, (details airplane interior:1.4)
+
+
+Size: 360x640
+Seed: 687635957
+Model: perfectWorld_v4Baked
+Steps: 38
+Sampler: Euler a
+CFG scale: 6.5
+Model hash: 24a393500f
+Hires steps: 10
+Hires upscale: 2
+Hires upscaler: Latent
+Face restoration: CodeFormer
+Denoising strength: 0.7
+
+Comments: 
