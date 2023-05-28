@@ -560,31 +560,37 @@ class PromptPlainTextEdit(QPlainTextEdit):
                 new_prompts.negative_tag_string(True))
 
     def dropEvent(self, event):
-        # Get the drop data
-        mime_data = event.mimeData()
-        if mime_data.hasFormat('text/plain'):
-            # Get the data as bytes and convert to string
-            raw_data = bytes(mime_data.data('text/plain')).decode()
-            tag_data = eval(raw_data)
+        try:
+            # Get the drop data
+            mime_data = event.mimeData()
+            if mime_data.hasFormat('text/plain'):
+                # Get the data as bytes and convert to string
+                raw_data = bytes(mime_data.data('text/plain')).decode()
+                tag_data = eval(raw_data)
 
-            self.on_accept_tag_data(tag_data)
+                self.on_accept_tag_data(tag_data)
 
-            # # Convert the string back to a list
-            # selected_data = [tag.strip() for tag in eval(data) if len(tag.strip()) > 0]
-            # # Join the values with a comma separator and set the text
-            # tags_text = ', '.join(selected_data)
-            #
-            # current_text = self.toPlainText().rstrip()
-            # if len(current_text) > 0 and current_text[-1] != ',':
-            #     # Add a comma and the new text
-            #     new_text = current_text + ', ' + tags_text
-            # else:
-            #     # Add the new text
-            #     new_text = current_text + tags_text
-            # # Set the new text
-            # self.setPlainText(new_text)
+                # # Convert the string back to a list
+                # selected_data = [tag.strip() for tag in eval(data) if len(tag.strip()) > 0]
+                # # Join the values with a comma separator and set the text
+                # tags_text = ', '.join(selected_data)
+                #
+                # current_text = self.toPlainText().rstrip()
+                # if len(current_text) > 0 and current_text[-1] != ',':
+                #     # Add a comma and the new text
+                #     new_text = current_text + ', ' + tags_text
+                # else:
+                #     # Add the new text
+                #     new_text = current_text + tags_text
+                # # Set the new text
+                # self.setPlainText(new_text)
 
-            event.acceptProposedAction()
+                event.acceptProposedAction()
 
-            self.setFocus()
-            self.moveCursor(QtGui.QTextCursor.End)
+                self.setFocus()
+                self.moveCursor(QtGui.QTextCursor.End)
+        except Exception as e:
+            # Drag the data from self may cause error.
+            print(e)
+        finally:
+            pass
