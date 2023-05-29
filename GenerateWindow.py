@@ -307,6 +307,7 @@ class GenerateWindow(QMainWindow):
 
     def on_tab_changed(self, index):
         if index == 1:
+            self.refresh_tree()
             self.group_information.setVisible(True)
         else:
             self.group_information.setVisible(False)
