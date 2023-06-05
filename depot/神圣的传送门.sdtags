@@ -1,0 +1,19 @@
+(magical portal:1.1), holy light, (golden particles:1.1), (light beams:1.1)
+
+
+ENSD: 31337
+Size: 512x768
+Seed: 2967148808
+Model: ghostmix_v20Bakedvae
+Steps: 30
+Version: v1.2.1
+Sampler: DPM++ 2M Karras
+CFG scale: 5
+Clip skip: 2
+Model hash: 0f5ef4c164
+Hires steps: 15
+Hires upscale: 2
+Hires upscaler: SwinIR_4x
+Denoising strength: 0.5
+
+Comments: 
