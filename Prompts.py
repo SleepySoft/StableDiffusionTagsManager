@@ -42,8 +42,10 @@ class Prompts:
         self.positive_tag_data_dict = {PRIMARY_KEY: [], 'weight': []}
         self.negative_tag_data_dict = {PRIMARY_KEY: [], 'weight': []}
         self.extra_data_string = ''
+        self.raw_prompts = ''
 
     def from_text(self, text: str) -> bool:
+        self.raw_prompts = text
         return self.parse_prompt_text(text)
 
     def from_file(self, file_name: str) -> bool:
@@ -153,7 +155,7 @@ class Prompts:
         for keyword in SPECIAL_KEYWORDS:
             positive_tags_string = positive_tags_string.replace(keyword, ',')
             negative_tags_string = negative_tags_string.replace(keyword, ',')
-        extra_data_string = prompt_text[negative_end + 1:].strip()
+        extra_data_string = prompt_text[negative_end + 1:].strip() if negative_end > 0 else ''
 
         # print('Positive tags:', positive_tags_string)
         # print('Negative tags:', negative_tags_string)

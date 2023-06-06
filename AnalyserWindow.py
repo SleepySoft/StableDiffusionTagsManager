@@ -63,18 +63,22 @@ class AnalyserWindow(QWidget):
         auto_translate_button.clicked.connect(self.on_button_translate)
         menu_layout.addWidget(auto_translate_button)
 
-        auto_pick_button = QPushButton('自动选择有效标签')
-        auto_pick_button.clicked.connect(self.on_button_auto_pick_positive)
-        menu_layout.addWidget(auto_pick_button)
+        # auto_pick_button = QPushButton('自动选择有效标签')
+        # auto_pick_button.clicked.connect(self.on_button_auto_pick_positive)
+        # menu_layout.addWidget(auto_pick_button)
 
-        auto_pick_button = QPushButton('保存选中的正向标签')
-        auto_pick_button.clicked.connect(self.on_button_save_picked_positive)
-        menu_layout.addWidget(auto_pick_button)
+        save_select_button = QPushButton('保存选中的正向标签')
+        save_select_button.clicked.connect(self.on_button_save_picked_positive)
+        menu_layout.addWidget(save_select_button)
 
         # self.group_check_button = QCheckBox('按组排列')
         # self.group_check_button.setChecked(True)
         # self.group_check_button.clicked.connect(self.on_check_group)
         # menu_layout.addWidget(self.group_check_button)
+
+        save_prompts_button = QPushButton('保存整个Prompts')
+        save_prompts_button.clicked.connect(self.on_button_save_whole_prompts)
+        menu_layout.addWidget(save_prompts_button)
 
         # Add a stretch that weights max to the menu layout
         menu_layout.addStretch(1)
@@ -102,8 +106,8 @@ class AnalyserWindow(QWidget):
         self.negative_group.setLayout(negative_group_layout)
 
         # Set the horizontal header of the positive and negative tables to be clickable for sorting
-        self.positive_table.horizontalHeader().setSectionsClickable(True)
-        self.negative_table.horizontalHeader().setSectionsClickable(True)
+        # self.positive_table.horizontalHeader().setSectionsClickable(True)
+        # self.negative_table.horizontalHeader().setSectionsClickable(True)
 
         # Connect the sort function to the header clicked signal of the positive and negative tables
         self.positive_table.horizontalHeader().sectionClicked.connect(self.positive_table.sortByColumn)
@@ -249,10 +253,11 @@ class AnalyserWindow(QWidget):
     def on_button_save_picked_positive(self):
         checked_tags = []
         weights = []
-        for row in range(self.positive_table.rowCount()):
-            if self.positive_table.item(row, 0).checkState() == Qt.Checked:
-                checked_tags.append(self.positive_table.item(row, 0).text())
-                weights.append(self.positive_table.item(row, 1).text())
+        for row in self.positive_table.selectionModel().selectedRows():     # range(self.positive_table.rowCount()):
+            # 20230606: Change check selection to normal multiple selection
+            # if self.positive_table.item(row, 0).checkState() == Qt.Checked:
+            checked_tags.append(self.positive_table.item(row.row(), 0).text())
+            weights.append(self.positive_table.item(row.row(), 1).text())
 
         if len(checked_tags) > 0:
             prompt = Prompts()
@@ -266,6 +271,11 @@ class AnalyserWindow(QWidget):
             # dlg.text_tags.setText(', '.join(checked_tags))
             # dlg.text_extras.setText(extras_str)
             dlg.exec_()
+
+    def on_button_save_whole_prompts(self):
+        prompts = self.text_edit.toPlainText()
+        dlg = SavePromptsDialog(prompts)
+        dlg.exec_()
 
     def update_tag_path_tree(self):
         TagManager.update_tag_path_tree(self.tree, self.tag_manager.get_database(), PRESET_TAG_PATH)

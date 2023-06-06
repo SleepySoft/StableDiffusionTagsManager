@@ -10,7 +10,7 @@ from TagManager import PRIMARY_KEY
 
 
 class SavePromptsDialog(QDialog):
-    def __init__(self, prompts: Prompts):
+    def __init__(self, prompts: Prompts or str):
         super().__init__()
 
         self.prompts = prompts
@@ -55,9 +55,20 @@ class SavePromptsDialog(QDialog):
         self.buttons_layout.addWidget(self.cancel_button)
         self.layout.addLayout(self.buttons_layout)
 
-        self.text_tags.setText(self.prompts.positive_tag_string(True) + '\n' +
-                               self.prompts.negative_tag_string(True))
-        self.text_extras.setPlainText(self.prompts.re_format_extra_string() + '\n\nComments: ')
+        if isinstance(self.prompts, Prompts):
+            self.text_tags.setText(self.prompts.positive_tag_string(True) + '\n' +
+                                   self.prompts.negative_tag_string(True))
+            prompts = self.prompts
+        elif isinstance(self.prompts, str):
+            # Only split the extra data part out
+            prompts = Prompts()
+            prompts.from_text(self.prompts)
+            self.text_tags.setText(self.prompts.replace(prompts.extra_data_string, '').strip())
+        else:
+            prompts = None
+
+        if prompts is not None:
+            self.text_extras.setPlainText(prompts.re_format_extra_string() + '\n\nComments: ')
         self.text_extras.moveCursor(QTextCursor.End)
         
         self.setLayout(self.layout)
@@ -74,13 +85,15 @@ class SavePromptsDialog(QDialog):
         if not os.path.exists(depot_path):
             os.makedirs(depot_path)
 
-        options = QFileDialog.Options()
-        options |= QFileDialog.DontUseNativeDialog
+        # options = QFileDialog.Options()
+        # options |= QFileDialog.DontUseNativeDialog
 
         extension = '.sdtags'
-        file_name, _ = QFileDialog.getSaveFileName(self, "Save File", depot_path, "SDTags (*%s)" % extension, options=options)
+        file_name, _ = QFileDialog.getSaveFileName(self, "Save File", depot_path, "SDTags (*%s)" % extension)
         if file_name:
-            with open(file_name + extension, 'w') as file:
+            if not file_name.endswith(extension):
+                file_name += extension
+            with open(file_name, 'w') as file:
                 file.write(self.text_tags.toPlainText())
                 file.write('\n\n')
                 file.write(self.text_extras.toPlainText())
