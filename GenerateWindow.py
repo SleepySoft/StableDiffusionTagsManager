@@ -83,7 +83,18 @@ class GenerateWindow(QMainWindow):
 
         # ---------------------------------------------------------------------------
 
-        center_layout = QVBoxLayout()
+        structured_data_tab = QWidget()
+        structured_data_tab_layout = QVBoxLayout()
+        structured_data_tab.setLayout(structured_data_tab_layout)
+
+        raw_data_tab = QWidget()
+        raw_data_tab_layout = QHBoxLayout()
+        raw_data_tab.setLayout(raw_data_tab_layout)
+
+        self.tab_structured_raw_widget = QTabWidget()
+        self.tab_structured_raw_widget.addTab(structured_data_tab, "结构化数据")
+        self.tab_structured_raw_widget.addTab(raw_data_tab, "原始数据")
+        self.tab_structured_raw_widget.setTabVisible(1, False)
 
         # ---------------------- The tag group ----------------------
 
@@ -123,15 +134,22 @@ class GenerateWindow(QMainWindow):
 
         group_information_layout.addWidget(self.text_information)
 
-        center_layout.addWidget(group_tags_view, 55)
-        center_layout.addWidget(self.group_information, 45)
+        # -----------------------------------------------------------
+
+        structured_data_tab_layout.addWidget(group_tags_view, 55)
+        structured_data_tab_layout.addWidget(self.group_information, 45)
+
+        # -------------------- The raw data group --------------------
+
+        self.text_raw_sdtags = QPlainTextEdit()
+        raw_data_tab_layout.addWidget(self.text_raw_sdtags)
 
         # -----------------------------------------------------------
 
         # self.text_free = QPlainTextEdit()
         # tag_free_input_tab_layout.addWidget(self.text_free)
 
-        root_layout.addLayout(center_layout, 35)
+        root_layout.addWidget(self.tab_structured_raw_widget, 35)
 
         # ---------------------------------------------------------------------------
 
@@ -309,8 +327,10 @@ class GenerateWindow(QMainWindow):
         if index == 1:
             self.refresh_tree()
             self.group_information.setVisible(True)
+            self.tab_structured_raw_widget.setTabVisible(1, True)
         else:
             self.group_information.setVisible(False)
+            self.tab_structured_raw_widget.setTabVisible(1, False)
 
     def refresh_ui(self):
         self.refresh_tree()
@@ -418,15 +438,24 @@ class GenerateWindow(QMainWindow):
                 print('TODO: Dragged file:', file_path)
 
     def on_depot_file_selected(self, file_path):
-        prompt = Prompts()
-        if prompt.from_file(file_path):
-            df = self.tag_manager.get_database()
-            self.display_tag = pd.DataFrame(prompt.positive_tag_data_dict)
-            self.display_tag = merge_df_keeping_left_value(self.display_tag, df, PRIMARY_KEY)
-            translate_df(self.display_tag, PRIMARY_KEY, 'translate_cn', True, True)
-            self.refresh_table()
+        try:
+            with open(file_path, 'rt') as f:
+                file_data = f.read()
+                self.text_raw_sdtags.setPlainText(file_data)
 
-            self.text_information.setPlainText(prompt.extra_data_string)
+                prompt = Prompts()
+                if prompt.from_text(file_data):
+                    df = self.tag_manager.get_database()
+                    self.display_tag = pd.DataFrame(prompt.positive_tag_data_dict)
+                    self.display_tag = merge_df_keeping_left_value(self.display_tag, df, PRIMARY_KEY)
+                    translate_df(self.display_tag, PRIMARY_KEY, 'translate_cn', True, True)
+                    self.refresh_table()
+                    self.text_information.setPlainText(prompt.extra_data_string)
+        except Exception as e:
+            print(e)
+            return False
+        finally:
+            pass
 
     # def read_file_content(self, file_path):
     #     if os.path.isfile(file_path):
