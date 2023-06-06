@@ -1,0 +1,14 @@
+ultra realistic 8k cg, picture-perfect face,  <lora:japaneseDollLikeness_v10:0.2>,  close mouth, flawless, clean, masterpiece, professional artwork, famous artwork, cinematic bloom, 1 girl, 18 years old, bangs, small breasts, purple hair:1.5, long eyelashes, eyeshadow, hair ornament, indoors, red lips, long hair twintails, looking at viewer, pantyshot, pleated skirt, school uniform, serafuku, sitting, skirt, soles, solo, thighhighs, garter belt, choker, white legwear, smile, solo,blushing, detailed skin, detailed face, detail eyes, perfect eyes, realistic skin, shiny skin)), shirt, (asian:1.3)
+
+Negative prompt: (painting by bad-artist-anime:0.9), (painting by bad-artist:0.9), watermark, text, error, blurry, blurry face, jpeg artifacts, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, artist name, (worst quality, low quality:1.5), extra limbs, extra body parts, floating body parts, extra legs, extra hands, extra legs, extra arms, (bad anatomy), missing fingers, extra fingers, bad hands, bad body, covered breasts, (panties, underwear), ((covered pussy, pubic hair)), hands between legs
+
+Size: 768x1152
+Seed: 3393614364
+Model: perfectWorld_v2Baked
+Steps: 30
+Sampler: Euler a
+CFG scale: 9
+Clip skip: 2
+Model hash: 79e42fb744
+
+Comments: 使用完美2效果较好，LoRA再大容易崩。默认非18x。嘴部描绘有点瑕疵，建议闭嘴。

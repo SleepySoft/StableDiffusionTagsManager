@@ -1,0 +1,15 @@
+(ultra high res,photorealistic,realistic,best quality,photo-realistic), (((high detailed skin,visible pores))),(real person,photograph), <lora:shojovibe_v11:0.4><lora:GuoFeng3.2_Lora:0.2>,((mix4)), (8k, raw photo, best quality, masterpiece),(1 japanese girl),photon mapping, radiosity, physically-based rendering,automatic white balance,(((face close-up,haunting smile,moist lips,short hair))), watery eyes, (blush|cute and playful|adorable|skinny|thick bangs|beauty|18 years old|childish looks|under 18 years old),((((large breasts)))),((((looking at viewer)))),((irises and pupils are rounded,the pupil reflects the surroundings,eyes are not the same size)), ((((skinny))))
+
+(worst quality:1.7),(low quality:1.6),(normal quality:1.5),lowres,blurry,simple background,jpeg artifacts,bad-artist,bad shadow,compressed image,low pixel,light spot, paintings,sketches,((monochrome)),((grayscale)),noise point,semi-realistic,3d,render,cg,drawing,cartoon,anime,comic,username,watermark,signature,cropped,error,censored,text,stain, deformed iris,deformed pupils,deformed nail,deformed ear,deformed eye,deformed eyelid,collapsed eyeshadow, [excessive skin spots,excessive skin imperfections,skin blemishes,skin fold,rough skinstain skin],goosebumps,skin layering,axillary fold,facial contortion, bad-hands-5,bad-image-v2-39000,bad_prompt,bad_prompt_version2,EasyNegative,NG_DeepNegative_V1_75T, jewelry,rings, earrings, necklaces,teeth,(flawless face),trimming,bad leg,bad pussy,
+
+Size: 536x808
+Seed: 1280920132
+Steps: 30
+Sampler: Euler a
+CFG scale: 8
+Model hash: 79e42fb744
+Hires upscale: 2
+Hires upscaler: Latent
+Denoising strength: 0.66
+
+Comments: 精简后的正向Prompts，过多的调节脸会崩，默认出NSFW图(露胸)。注意主模型一定是PerfectWorld3，否则难保脸部完美。
