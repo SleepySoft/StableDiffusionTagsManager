@@ -1,0 +1,14 @@
+(anubis ears:1.1), (gold:1.1), golden ornaments, body tattoo, face tattoo, (ancient egyptian theme:1.21), anubis attire, pharao, (1girl:1.3), (expressionless:1.21), petite, throne, pyramids, hierography
+
+
+Size: 1024x1536
+Seed: 136864511
+Model: ghostmix_v20Bakedvae
+Steps: 30
+Version: v1.2.1
+Sampler: DPM++ 2M Karras
+CFG scale: 7
+Model hash: e3edb8a26f
+Denoising strength: 0.35
+
+Comments: 

@@ -1,0 +1,18 @@
+(masterpiece, top quality, best quality, official art, beautiful and aesthetic:1.2), (1girl), (detailed yellow eyes), extreme detailed eyes, (perfect face), hairpins, (white kimono with red lines:1.3), (colorful), shiny skin, (white fox), (sakura petal), highest detailed, intricate, (particle effect), cinematic light, high contrast, full moon, eclipse, (night), (sakura trees background:1.3), (detailed feather fan:1.2), <lora:taiwanDollLikeness_v15:0.35>
+Negative prompt: (easynegative), ng_deepnegative_v1_75t, ((2girls)), bad hands, extra hands, extra fingers, fused fingers, bad arm, extra arms, fused arms, extra legs, missing leg, extra nipples, liquid hand, inverted hand, disembodied limb, oversized head, extra body, completely nude, extra navel, (hair between eyes), duplicate, huge eyes, (bad and mutated hands:1.3), (missing fingers), (interlocked fingers:1.2), (Ugly Fingers), (deformed fingers:1.2), (long fingers:1.2)
+
+ENSD: 31337
+Size: 450x800
+Seed: 3341773392
+Model: ghostmix_v20Bakedvae
+Steps: 30
+Sampler: DPM++ 2M Karras
+CFG scale: 5
+Clip skip: 2
+Model hash: 0f5ef4c164
+Hires steps: 20
+Hires upscale: 1.6
+Hires upscaler: R-ESRGAN 4x+ Anime6B
+Denoising strength: 0.5
+
+Comments: https://civitai.com/images/887233?period=AllTime&periodMode=published&sort=Newest&view=categories&modelVersionId=76907&modelId=36520&postId=237197
