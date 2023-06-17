@@ -27,6 +27,7 @@ class GenerateWindow(QMainWindow):
         self.tag_manager = tag_manager
         self.display_tag = pd.DataFrame(columns=GENERATE_DISPLAY_FIELD)
         self.includes_sub_path = False
+        self.current_depot_file = ''
 
         # Create the root layout as a horizontal layout
         root_layout = QHBoxLayout()
@@ -89,7 +90,7 @@ class GenerateWindow(QMainWindow):
         structured_data_tab.setLayout(structured_data_tab_layout)
 
         raw_data_tab = QWidget()
-        raw_data_tab_layout = QHBoxLayout()
+        raw_data_tab_layout = QVBoxLayout()
         raw_data_tab.setLayout(raw_data_tab_layout)
 
         self.tab_structured_raw_widget = QTabWidget()
@@ -144,6 +145,15 @@ class GenerateWindow(QMainWindow):
 
         self.text_raw_sdtags = QPlainTextEdit()
         raw_data_tab_layout.addWidget(self.text_raw_sdtags)
+
+        self.button_save_raw = QPushButton('保存（可以在此直接修改文并保存）')
+        self.button_save_raw.clicked.connect(self.do_save_depot)
+
+        layout = QHBoxLayout()
+        layout.addStretch()
+        layout.addWidget(self.button_save_raw)
+
+        raw_data_tab_layout.addLayout(layout)
 
         # -----------------------------------------------------------
 
@@ -404,6 +414,21 @@ class GenerateWindow(QMainWindow):
         dlg = SavePromptsDialog(prompt)
         dlg.exec_()
 
+    def do_save_depot(self):
+        if self.current_depot_file == '':
+            return
+        try:
+            with open(self.current_depot_file, 'wt') as f:
+                prompts = self.text_raw_sdtags.toPlainText()
+                f.write(prompts)
+            QMessageBox.information(self, '成功', '保存成功')
+            self.load_depot_file(self.current_depot_file)
+        except Exception as e:
+            print(e)
+            QMessageBox.information(self, '错误', '保存失败')
+        finally:
+            pass
+
     # def refresh_depot_tree(self):
     #     self.tree_depot_browse.clear()
     #     depot_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'depot')
@@ -444,6 +469,9 @@ class GenerateWindow(QMainWindow):
                 print('TODO: Dragged file:', file_path)
 
     def on_depot_file_selected(self, file_path):
+        self.load_depot_file(file_path)
+
+    def load_depot_file(self, file_path):
         try:
             with open(file_path, 'rt') as f:
                 file_data = f.read()
@@ -457,6 +485,8 @@ class GenerateWindow(QMainWindow):
                     translate_df(self.display_tag, PRIMARY_KEY, 'translate_cn', True, True)
                     self.refresh_table()
                     self.text_information.setPlainText(prompt.extra_data_string)
+
+                self.current_depot_file = file_path
         except Exception as e:
             print(e)
             return False
