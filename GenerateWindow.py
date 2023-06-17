@@ -369,8 +369,12 @@ class GenerateWindow(QMainWindow):
 
             self.tag_manager.inform_database_modified(new_df, True)
 
+            QMessageBox.information(self, '保存结果', '保存完成。')
+
             # Refresh the table to display the updated data
             self.refresh_table()
+        else:
+            QMessageBox.information(self, '提示', '没有选择任何项目。')
 
     def do_set_shuffle(self, table: TagEditTableWidget):
         text, ok = QInputDialog.getText(self, '抽签分组', '请输入抽签分组名')
