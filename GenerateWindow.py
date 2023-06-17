@@ -1,6 +1,7 @@
 import sys
 import time
 
+import pandas as pd
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import Qt, QDataStream
 from PyQt5.QtCore import QMimeData
@@ -243,7 +244,8 @@ class GenerateWindow(QMainWindow):
         self.refresh_depot_tree()
         self.refresh_ui()
 
-    def on_edit_done(self, refresh_tree: bool = False):
+    # Callback Companionable.
+    def on_edit_done(self, _: pd.DataFrame = None, refresh_tree: bool = False):
         self.tag_manager.inform_database_modified(None, True)
         translated_df = self.display_tag[[PRIMARY_KEY, 'translate_cn']].copy()
         self.display_tag = update_df_from_right_value(
