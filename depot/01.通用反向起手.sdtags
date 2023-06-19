@@ -1,6 +1,11 @@
-EasyNegative, bad art, long neck, too many fingers, extra legs, extra arms, bad quality, less fingers, poor quality, low quality, ugly
+EasyNegative, FastNegativeV2, ng_deepnegative_v1_75t, By bad artist, bad art, long neck, too many fingers, extra legs, extra arms, bad quality, less fingers, poor quality, low quality, ugly
 
 
 
 
 Comments: 
+需要配合相应的pt文件，下载地址如下：
+easynegative: https://civitai.com/models/7808?modelVersionId=9208
+FastNegativeV2: https://civitai.com/models/71961?modelVersionId=94057
+ng_deepnegative_v1_75t: https://civitai.com/models/4629?modelVersionId=5637
+By bad artist: https://civitai.com/models/5224?modelVersionId=6056
