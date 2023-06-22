@@ -1,0 +1,19 @@
+masterpiece, best quality,1girl,<lora:kokomi-0118:0.8>,sfw,
+Negative prompt: EasyNegative, badhandv4, negative_hand-neg, ng_deepnegative_v1_75t, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry,
+
+Size: 512x768
+Seed: 2760886030
+Model: perfectWorld_v4Baked
+Steps: 40
+Version: v1.3.2
+Sampler: DPM++ 2M Karras
+CFG scale: 7
+Clip skip: 2
+Model hash: 24a393500f
+Hires steps: 12
+"kokomi-0118: 85dce2b1e297"
+Hires upscale: 2
+Hires upscaler: R-ESRGAN 4x+ Anime6B
+Denoising strength: 0.5
+
+Comments: Ïê¼ûÕâÆªÎÄÕÂ - https://zhuanlan.zhihu.com/p/638848057
