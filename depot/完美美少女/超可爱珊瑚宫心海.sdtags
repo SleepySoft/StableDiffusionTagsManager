@@ -1,0 +1,46 @@
+(Best Quality, Masterpiece:1.4), (Realism:1.2), (Realisitc:1.2), (Absurdres:1.2), 4K,(photorealistic:1.3), Detailed, Ultra-Detailed, Digital Art,beautiful face,beautiful detailed eyes, symmetric eyes,1girl,Solo,pureerosface_v1:0.3,(Slim Curvy Body,)(multicolored hair,Pink Hair ,gradient hair,Long Hair,purple eyes,Ribbon),sangonomiya kokomi (sparkling coralbone),(off shoulder,White Shirt,Long Sleeves)
+
+
+
+Negative prompt: Paintings,sketches, (worst quality, low quality, normal quality:1.7), lowres, blurry, text, logo, ((monochrome)), ((grayscale)), skin spots, acnes, skin blemishes, age spot, strabismus, wrong finger, lowres, bad anatomy, bad hands, text,error,missing fingers,extra digit ,fewer digits,cropped,wort quality ,low quality,normal quality, jpeg artifacts,signature,watermark, username, blurry, bad feet, (worst quality, low quality:1.4),, hand, feet, foot, (dark skin:1.1), fused girls, fushion, bad-hands-5, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, signature, watermark, username, blurry, (bad feet:1.1),, monochrome, jpeg artifacts, ugly, pregnant, vore, duplicate, morbid, mutilated, tran nsexual, hermaphrodite, long neck, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, bad proportions, malformed limbs, extra limbs, cloned face, disfigured, gross proportions, (missing arms:1.331), (missing legs:1.331), (extra arms:1.331), (extra legs:1.331), plump, bad legs, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, long body, lowres, bad anatomy, bad hands, missing fingers, pubic hair,extra digit, fewer digits, cropped, worst quality, low quality, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry,huge breasts,Large Breasts,kid,children,extra hands,extra arms，((disfigured)), ((bad art)), ((deformed)),ugly face,,umbrella,deformed face,malformed face,extra head, easynegative, badhandv4,Big Breasts,multiple girls, multiple views
+
+
+
+Steps: 35, 
+Sampler: DPM++ 2M alt Karras, 
+CFG scale: 27, 
+Seed: 64727523, 
+Size: 512x1008, 
+Model hash: d7700eac56, 
+Model: xeroxrealmix_v35, 
+Denoising strength: 0.54, 
+Clip skip: 2, 
+Mask blur: 4, 
+Dynamic thresholding enabled: True, 
+Mimic scale: 10, Threshold percentile: 100, 
+Mimic mode: Half Cosine Up, 
+Mimic scale minimum: 6.5, 
+CFG mode: Half Cosine Up, 
+CFG scale minimum: 6.5, 
+
+AddNet Enabled: True, 
+AddNet Module 1: 
+	LoRA, AddNet Model 1: no116Girl_no116(2a49ebeb4670), 
+	AddNet Weight A 1: 0.3, AddNet Weight B 1: 0.3, 
+AddNet Module 2: 
+	LoRA, AddNet Model 2: shiftymine_V2(6752baa2d098), 
+	AddNet Weight A 2: 0.3, AddNet Weight B 2: 0.3, 
+AddNet Module 3: 
+	LoRA, AddNet Model 3: kokomi_1024_Adam8_dim64_kohyaLoRA_fp32_8e-2noise_token2_24-3-2023(57ec1f8f9329), 
+	AddNet Weight A 3: 0.8, AddNet Weight B 3: 0.8, 
+AddNet Module 4: 
+	LoRA, AddNet Model 4: koreanDollLikeness_v20(8f3d16e6eada), 
+	AddNet Weight A 4: 0.2, AddNet Weight B 4: 0.2, Hashes: 
+	
+{"vae": "735e4c3a44", "embed:badhandv4": "5e40d722fc", "model": "d7700eac56"}
+
+
+Comments: 
+    no116Girl_no116: https://anonfiles.com/yej7Lbxbz2/no116Girl_no116_safetensors
+    shiftymine_V2: https://civitai.com/models/39434?modelVersionId=45341
+    kokomi_1024: https://civitai.com/models/21041
