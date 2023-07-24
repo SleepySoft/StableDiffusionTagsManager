@@ -489,6 +489,7 @@ class GenerateWindow(QMainWindow):
                 self.current_depot_file = file_path
         except Exception as e:
             print(e)
+            print(traceback.format_exc())
             return False
         finally:
             pass
