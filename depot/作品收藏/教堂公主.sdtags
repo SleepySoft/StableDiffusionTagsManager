@@ -1,0 +1,18 @@
+<lora:hipoly3DModelLora_v20:0.6>,(masterpiece, best quality:1.2),(best quality, masterpiece),3d,1girl,(extremely detailed CG unity 8k wallpaper, masterpiece, best quality, ultra-detailed),(best illumination, best shadow, an extremely delicate and beautiful),beautiful detailed,colourful,finely detailed,(light:1.2),intricate detail,1girl,looking at viewer,upper body,3D,realistic,(large breasts:1.3),excessively frilled princess dress,draped clothes,jewelry,ornament,flower,lace trim,best quality,8k,detailed skin texture,detailed cloth texture,beautiful detailed face,intricate details,ultra detailed,rim lighting,side lighting,cinematic light,ultra high res,8k uhd,film grain,best shadow,delicate,RAW,,
+church,
+
+Negative prompt: [:EasyNegative:0.5],extra fingers,fewer fingers,cowboy,mole,freckles,facepaint,(simple background:1.3),lowres,bad anatomy,bad hands,text,error,missing fingers,extra digit,fewer digits,cropped,worst quality,low quality,normal quality,jpeg artifacts,signature,watermark,username,blurry,missing arms,long neck,humpbacked,missing limb,too many fingers,mutated,poorly drawn,out of frame,bad hands,unclear eyes,poorly drawn,cloned face,bad face,Anal intercourse,three legs,
+
+Steps: 25, 
+ENSD: 31337, 
+Size: 512x896, 
+Seed: 1041864763, 
+Model: alstroemeriaMix_v10, 
+Version: v1.2.1, 
+Sampler: DPM++ SDE Karras, 
+CFG scale: 10, 
+Clip skip: 2, 
+Model hash: 8be1721acb, 
+Hires upscale: 2, 
+Hires upscaler: R-ESRGAN 4x+, 
+Denoising strength: 0.2
