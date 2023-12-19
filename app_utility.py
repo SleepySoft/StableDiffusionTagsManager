@@ -1,6 +1,7 @@
 import os
 import glob
 import datetime
+import requests
 from collections import defaultdict
 
 
@@ -86,4 +87,21 @@ def convert_list_of_dicts(input_list):
     for key in result:
         result[key] += [None] * (max_len - len(result[key]))
     return result
+
+
+def set_global_proxy(proxy_dict):
+    """
+    为全局的requests设置代理。
+
+    参数:
+    proxy_dict (dict): 代理字典，格式为{'http': 'http://10.10.1.10:3128', 'https': 'https://10.10.1.10:1080'}。
+    """
+    session = requests.Session()
+    session.proxies.update(proxy_dict)
+    requests.adapters.DEFAULT_RETRIES = 5
+    requests.session().keep_alive = False
+    requests.adapters.HTTPAdapter(pool_connections=100, pool_maxsize=100)
+    requests.Session().mount('http://', requests.adapters.HTTPAdapter(max_retries=3))
+    requests.Session().mount('https://', requests.adapters.HTTPAdapter(max_retries=3))
+    requests.sessions.default = session
 

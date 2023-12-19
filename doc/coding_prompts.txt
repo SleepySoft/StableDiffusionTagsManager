@@ -323,3 +323,71 @@ Show the positive_tags_string, negative_tags_string and extra_data_string
 标签不会被多种括号包围。权重的n为括号的层数。如果标签被 () 包围，则数字加入weight_list，非数字加入tag_list。标签被<>包围但不包含:，则把它当作一个权重为1的普通标签。
 
 
+
+
+
+实现一个函数：parse_tags(tags: str)。
+tags是一个用逗号分隔的字符串
+
+
+
+def parse_tags(input_string):
+    # 使用正则表达式匹配所有非空白字符，包括各种括号
+    tags = re.findall(r'[\w\(\)\[\]\{\}<>（）【】《》]+', input_string)
+    return tags
+
+
+
+
+写几个函数：
+like_positive_flag(prompt_line: str) -> Tuple(bool, str)
+    如果prompt_line以'positive prompt'开头（无视大小写），则返回True，和将该行'positive prompt'及后面的冒号（可能有，可能没有，有可能是全角，可能前后有空格）去掉后的字符串
+    否则返回False及原字符串
+
+like_negative_flag(prompt_line: str) -> Tuple(bool, str)
+    如果prompt_line以'negative prompt'开头（无视大小写），则返回True，和将该行'negative prompt'及后面的冒号（可能有，可能没有，有可能是全角，可能前后有空格）去掉后的字符串
+    否则返回False及原字符串
+
+like_extra_data(prompt_line: str) -> bool
+    如果prompt_line的字符串类似dict的格式，则返回true，否则返回false。
+
+
+
+写一个函数；def parse_prompts(prompt_text: str)
+
+先将prompt_text按换行'\n'划分，得到prompt_lines。对prompt_lines每一行进行strip，并且抛弃前面的空行。
+对于prompt_lines，一般来说，首先是positive prompt，然后是negative prompt，最后是extra data。由于格式不一定规范，所以需要猜测各部分文字的边界。
+设置一个prompt_flag，初始是"positive"，如果疑似进入负面提示词，则是"maybe_negative"，如果定位到负面提示词，则是"negative"，负面提示词结束，则是"extra"。
+根据prompt_flag，遍历的行分别加入positive_lines，negative_lines，negative_lines和extra_lines
+
+
+对prompt_lines每一行：
+    如果prompt_flag是"positive"，则把negative_lines里的内容转移到positive_lines中
+
+    如果该行以'positive prompt'开头，则将该行'positive prompt'及后面的冒号（可能有，可能没有，有可能是全角，可能前后有空格）去掉
+
+    如果该行以'negative prompt'开头，则将该行'negative prompt'及后面的冒号（可能有，可能没有，有可能是全角，可能前后有空格）去掉
+        如果prompt_flag是"maybe_negative"，则把negative_lines里的内容转移到positive_lines中
+        这个时候prompt_flag变为"negative"
+
+    如果prompt_flag是"positive"：
+        遇到换行，则变为"maybe_negative"
+        如果连续遇到两个换行，则变为"negative"，并且把negative_lines里的内容转移到positive_lines中
+
+    如果
+
+
+
+
+在prompt_lines中查找'positive prompt'，不分大小写，记录为positive_start_line
+在prompt_lines中查找'negative prompt'，不分大小写，记录为negative_start_line
+如果positive_start_line为-1，则positive_start_line为0。
+如果negative_start_line为-1，则从
+
+
+
+
+
+
+
+

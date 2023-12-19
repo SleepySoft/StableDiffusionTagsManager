@@ -1,10 +1,9 @@
+import time
 import random
-import string
-import traceback
-
+import hashlib
 import requests
+import traceback
 import pandas as pd
-from pandas._testing import assert_frame_equal
 
 RIGHT_INDICATOR = "__Right_Sleepy_299792458"
 
@@ -12,22 +11,61 @@ RIGHT_INDICATOR = "__Right_Sleepy_299792458"
 # From new Bing
 # Thanks youdao providing API KEY free translate service.
 
+
 def youdao_translate(query, from_lang='AUTO', to_lang='AUTO'):
     url = 'http://fanyi.youdao.com/translate'
+    client = "fanyideskweb"
+    key = "aNPG!!u6sesA>hBAW1@(-"
+    salt = str(int(time.time()*1000) + random.randint(0, 10))
+    sign = hashlib.md5((client + query + salt + key).encode('utf-8')).hexdigest()
+
     data = {
         "i": query,
         "from": from_lang,
         "to": to_lang,
         "smartresult": "dict",
-        "client": "fanyideskweb",
-        "salt": "16081210430989",
+        "client": client,
+        "salt": salt,
+        "sign": sign,
         "doctype": "json",
         "version": "2.1",
         "keyfrom": "fanyi.web",
         "action": "FY_BY_CLICKBUTTION"
     }
+
     res = requests.post(url, data=data).json()
     return res['translateResult'][0][0]['tgt']
+
+
+# def youdao_translate(query, from_lang='AUTO', to_lang='AUTO'):
+#     url = 'http://fanyi.youdao.com/translate'
+#     data = {
+#         "i": query,
+#         "from": from_lang,
+#         "to": to_lang,
+#         "smartresult": "dict",
+#         "client": "fanyideskweb",
+#         "salt": "16081210430989",
+#         "doctype": "json",
+#         "version": "2.1",
+#         "keyfrom": "fanyi.web",
+#         "action": "FY_BY_CLICKBUTTION"
+#     }
+#     res = requests.post(url, data=data).json()
+#     return res['translateResult'][0][0]['tgt']
+
+
+def deepl_translate(text, target_lang='ZH'):
+    url = "https://api.deepl.com/v2/translate"
+    auth_key = 'your-auth-key'  # 请替换为你自己的DeepL API密钥
+    data = {
+        'auth_key': auth_key,
+        'text': text,
+        'target_lang': target_lang,
+    }
+    response = requests.post(url, data=data)
+    result = response.json()
+    return result['translations'][0]['text']
 
 
 translate_cache = {}

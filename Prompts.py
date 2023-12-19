@@ -1,4 +1,5 @@
-import pandas as pd
+import re
+from typing import Tuple, Union
 
 from TagManager import DATABASE_FIELDS, PRIMARY_KEY
 from app_utility import *
@@ -35,6 +36,36 @@ def parse_tag_colon_weight(tag: str) -> (str, float):
         return parts[0], (weight if weight else 1.0)
     else:
         return tag, 1.0
+
+
+def guess_prompt_group(prompt_line: str) -> Tuple[str, Union[str, dict]]:
+    if prompt_line.strip() == '':
+        return '', prompt_line
+
+    match = re.match(r"^\s*positive prompt[:：]?\s*(.*)$", prompt_line, re.I)
+    if match:
+        return 'positive', match.group(1)
+
+    match = re.match(r"^\s*negative prompt[:：]?\s*(.*)$", prompt_line, re.I)
+    if match:
+        return 'negative', match.group(1)
+
+    # 按逗号分割字符串
+    items = prompt_line.split(',')
+
+    for item in items:
+        if item.strip() == '':
+            continue
+
+        # 检查每一项是否由冒号分隔key和value
+        if not ':' in item:
+            return '', prompt_line
+
+        key, _ = item.split(':')
+        if len(key.strip()) == 0:
+            return '', prompt_line
+
+    return 'extra', prompt_line
 
 
 class Prompts:
@@ -124,50 +155,106 @@ class Prompts:
 
     @staticmethod
     def parse_prompts(prompt_text: str):
-        prompt_text = prompt_text.strip()
+        positive_lines, negative_lines, extra_data_lines = Prompts.group_prompts(prompt_text)
+
+    def group_prompts(self, prompt_text: str):
         lines = prompt_text.split('\n')
-        lines = [line for line in lines if line.strip() != '']
-        prompt_text = '\n'.join(lines)
+        lines = [line.strip() for line in lines]
 
-        positive_start = prompt_text.lower().find('positive prompt')
-        if positive_start != -1:
-            positive_start += len('positive prompt')
-            positive_start = prompt_text.find(':', positive_start) + 1
-        else:
-            positive_start = 0
+        empty_line_count = 0
+        prompt_flag = 'positive'
 
-        negative_start = prompt_text.lower().find('negative prompt')
-        if negative_start != -1:
-            positive_end = negative_start
-            negative_start += len('negative prompt')
-            negative_start = prompt_text.find(':', negative_start) + 1
-            negative_end = prompt_text.find('\n', negative_start)
-        else:
-            first_line_end = prompt_text.find('\n')
-            second_line_end = prompt_text.find('\n', first_line_end + 1)
-            positive_end = first_line_end if first_line_end > 0 else len(prompt_text)
+        positive_lines = []
+        negative_lines = []
+        extra_data_lines = []
 
-            negative_start = positive_end
-            negative_end = second_line_end if second_line_end > 0 else len(prompt_text)
+        for line in lines:
+            group, sanitized_line = guess_prompt_group(line)
 
-        positive_tags_string = prompt_text[positive_start:positive_end].strip()
-        negative_tags_string = prompt_text[negative_start:negative_end].strip()
-        for keyword in SPECIAL_KEYWORDS:
-            positive_tags_string = positive_tags_string.replace(keyword, ',')
-            negative_tags_string = negative_tags_string.replace(keyword, ',')
-        extra_data_string = prompt_text[negative_end + 1:].strip() if negative_end > 0 else ''
+            if sanitized_line == '':
+                empty_line_count += 1
+            else:
+                empty_line_count = 0
 
-        # print('Positive tags:', positive_tags_string)
-        # print('Negative tags:', negative_tags_string)
-        # print('Extra data:', extra_data_string)
+            if group == 'extra':
+                prompt_flag = 'extra'
 
-        positive_tags_raw = positive_tags_string.replace('\n', ',').split(',')
-        negative_tags_raw = negative_tags_string.replace('\n', ',').split(',')
+            if prompt_flag == 'positive':
+                if group == 'positive':
+                    positive_lines.clear()
+                if group == 'negative':
+                    prompt_flag = 'positive'
+                if empty_line_count > 0:
+                    prompt_flag = 'maybe_negative'
 
-        positive_tags = [tag.strip() for tag in positive_tags_raw if tag.strip() != '']
-        negative_tags = [tag.strip() for tag in negative_tags_raw if tag.strip() != '']
+            elif prompt_flag == 'maybe_negative':
+                if group == 'negative' or empty_line_count > 1:
+                    positive_lines += negative_lines
+                    negative_lines.clear()
+                    prompt_flag = 'negative'
 
-        return positive_tags, negative_tags, extra_data_string
+            elif prompt_flag == 'negative':
+                pass
+            elif prompt_flag == 'extra':
+                pass
+            else:
+                assert False
+
+            {
+                'positive': positive_lines,
+                'maybe_negative': negative_lines,
+                'negative': negative_lines,
+                'extra': extra_data_lines
+            }[prompt_flag].append(sanitized_line)
+
+        return positive_lines, negative_lines, extra_data_lines
+
+    # @staticmethod
+    # def parse_prompts(prompt_text: str):
+    #     lines = prompt_text.split('\n')
+    #     lines = [line.strip() for line in lines]
+    #     prompt_text = '\n'.join(lines)
+    #
+    #     positive_start = prompt_text.lower().find('positive prompt')
+    #     if positive_start != -1:
+    #         positive_start += len('positive prompt')
+    #         positive_start = prompt_text.find(':', positive_start) + 1
+    #     else:
+    #         positive_start = 0
+    #
+    #     negative_start = prompt_text.lower().find('negative prompt')
+    #     if negative_start != -1:
+    #         positive_end = negative_start
+    #         negative_start += len('negative prompt')
+    #         negative_start = prompt_text.find(':', negative_start) + 1
+    #         negative_end = prompt_text.find('\n', negative_start)
+    #     else:
+    #         # Find the position of two consecutive newlines
+    #         double_newline_pos = prompt_text.find('\n\n')
+    #         if double_newline_pos != -1:
+    #             positive_end = double_newline_pos
+    #         else:
+    #             first_line_end = prompt_text.find('\n')
+    #             second_line_end = prompt_text.find('\n', first_line_end + 1)
+    #             positive_end = first_line_end if first_line_end > 0 else len(prompt_text)
+    #
+    #         negative_start = positive_end
+    #         negative_end = second_line_end if second_line_end > 0 else len(prompt_text)
+    #
+    #     positive_tags_string = prompt_text[positive_start:positive_end].strip()
+    #     negative_tags_string = prompt_text[negative_start:negative_end].strip()
+    #     for keyword in SPECIAL_KEYWORDS:
+    #         positive_tags_string = positive_tags_string.replace(keyword, ',')
+    #         negative_tags_string = negative_tags_string.replace(keyword, ',')
+    #     extra_data_string = prompt_text[negative_end + 1:].strip() if negative_end > 0 else ''
+    #
+    #     positive_tags_raw = positive_tags_string.replace('\n', ',').split(',')
+    #     negative_tags_raw = negative_tags_string.replace('\n', ',').split(',')
+    #
+    #     positive_tags = [tag.strip() for tag in positive_tags_raw if tag.strip() != '']
+    #     negative_tags = [tag.strip() for tag in negative_tags_raw if tag.strip() != '']
+    #
+    #     return positive_tags, negative_tags, extra_data_string
 
     @staticmethod
     def tags_list_to_tag_data(tags: [str]) -> dict:
