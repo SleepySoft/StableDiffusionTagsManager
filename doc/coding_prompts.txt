@@ -352,37 +352,9 @@ like_extra_data(prompt_line: str) -> bool
     如果prompt_line的字符串类似dict的格式，则返回true，否则返回false。
 
 
-
-写一个函数；def parse_prompts(prompt_text: str)
-
-先将prompt_text按换行'\n'划分，得到prompt_lines。对prompt_lines每一行进行strip，并且抛弃前面的空行。
-对于prompt_lines，一般来说，首先是positive prompt，然后是negative prompt，最后是extra data。由于格式不一定规范，所以需要猜测各部分文字的边界。
-设置一个prompt_flag，初始是"positive"，如果疑似进入负面提示词，则是"maybe_negative"，如果定位到负面提示词，则是"negative"，负面提示词结束，则是"extra"。
-根据prompt_flag，遍历的行分别加入positive_lines，negative_lines，negative_lines和extra_lines
-
-
-对prompt_lines每一行：
-    如果prompt_flag是"positive"，则把negative_lines里的内容转移到positive_lines中
-
-    如果该行以'positive prompt'开头，则将该行'positive prompt'及后面的冒号（可能有，可能没有，有可能是全角，可能前后有空格）去掉
-
-    如果该行以'negative prompt'开头，则将该行'negative prompt'及后面的冒号（可能有，可能没有，有可能是全角，可能前后有空格）去掉
-        如果prompt_flag是"maybe_negative"，则把negative_lines里的内容转移到positive_lines中
-        这个时候prompt_flag变为"negative"
-
-    如果prompt_flag是"positive"：
-        遇到换行，则变为"maybe_negative"
-        如果连续遇到两个换行，则变为"negative"，并且把negative_lines里的内容转移到positive_lines中
-
-    如果
-
-
-
-
-在prompt_lines中查找'positive prompt'，不分大小写，记录为positive_start_line
-在prompt_lines中查找'negative prompt'，不分大小写，记录为negative_start_line
-如果positive_start_line为-1，则positive_start_line为0。
-如果negative_start_line为-1，则从
+写一个函数：split_prompt(prompt_line: str)
+先将其中被括号包围的各个部分提取出来，括号包括："()[]{}<>"，注意有的内容有多层括号，多层括号应该为同一类型的括号，将其作为一个整体。
+提取以上内容后，再按逗号（包括全半角等）分割，去除空白内容，和上面的内容组成一个列表返回。
 
 
 

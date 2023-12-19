@@ -209,6 +209,23 @@ class Prompts:
 
         return positive_lines, negative_lines, extra_data_lines
 
+        def split_prompt(prompt_line: str):
+            # 匹配被括号包围的内容
+            bracket_patterns = [r'\([^()]*\)', r'\[[^[]*\]', r'\{[^{}]*\}', r'<[^<>]*>']
+            bracket_contents = []
+            for pattern in bracket_patterns:
+                while re.search(pattern, prompt_line):
+                    match = re.search(pattern, prompt_line)
+                    bracket_contents.append(match.group())
+                    prompt_line = prompt_line[:match.start()] + prompt_line[match.end():]
+
+            # 按逗号分割
+            comma_contents = re.split(r'[，,]', prompt_line)
+            # 去除空白内容
+            comma_contents = [content.strip() for content in comma_contents if content.strip()]
+
+            return bracket_contents + comma_contents
+
     # @staticmethod
     # def parse_prompts(prompt_text: str):
     #     lines = prompt_text.split('\n')
