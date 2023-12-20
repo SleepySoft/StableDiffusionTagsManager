@@ -358,7 +358,26 @@ like_extra_data(prompt_line: str) -> bool
 
 
 
+写一个函数：parse_addition_network(raw_tag: str),返回一个字符串和一个数字
+将首尾的"<>"去掉，并以":"分割字符串，假设结果为tag_parts。
+return tag_parts[0] + ":" + tag_parts[1], float(tag_parts[2])
+如果出错：return tag_parts[0] + ":"
+如果还出错：return tag_parts[0] + ":?"
+可以理解并优化上面所述代码。
 
+
+
+写一个函数：analysis_raw_tag(raw_tag: str)，返回tag列表和weight列表，二者长度相等。raw_tag会有以下情况：
+被"<>"包围：调用parse_addition_network，将结果加入返回列表。
+被"{}"包围：
+    如果其中包含"|"或","，为动态prompt。去除两边的括号，将其以","和"|"分割，对每一部分，递归调用analysis_raw_tag，整合结果
+    如果不包含"|"，则调用parse_wrapper(raw_tag, '{', '}', WEIGHT_INC_BASE)，返回tag和weight
+被"[]"包围：
+    调用parse_wrapper(raw_tag, '[', ']', WEIGHT_DEC_BASE)，返回tag和weight
+被"()"包围：
+    去除两边的括号后以","分割，对每一部分调用递归调用analysis_raw_tag，整合结果
+返回tag列表和weight列表
+这个流程是否有漏洞，如果没有，生成代码。
 
 
 

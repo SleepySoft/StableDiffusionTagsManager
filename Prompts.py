@@ -1,4 +1,5 @@
 import re
+from itertools import chain
 from typing import Tuple, Union
 
 from TagManager import DATABASE_FIELDS, PRIMARY_KEY
@@ -156,8 +157,12 @@ class Prompts:
     @staticmethod
     def parse_prompts(prompt_text: str):
         positive_lines, negative_lines, extra_data_lines = Prompts.group_prompts(prompt_text)
+        positive_tags = list(chain.from_iterable(Prompts.split_prompt(line) for line in positive_lines))
+        negative_tags = list(chain.from_iterable(Prompts.split_prompt(line) for line in negative_lines))
+        return positive_tags, negative_tags, '\n'.join(extra_data_lines)
 
-    def group_prompts(self, prompt_text: str):
+    @staticmethod
+    def group_prompts(prompt_text: str):
         lines = prompt_text.split('\n')
         lines = [line.strip() for line in lines]
 
@@ -209,22 +214,41 @@ class Prompts:
 
         return positive_lines, negative_lines, extra_data_lines
 
-        def split_prompt(prompt_line: str):
-            # 匹配被括号包围的内容
-            bracket_patterns = [r'\([^()]*\)', r'\[[^[]*\]', r'\{[^{}]*\}', r'<[^<>]*>']
-            bracket_contents = []
-            for pattern in bracket_patterns:
-                while re.search(pattern, prompt_line):
-                    match = re.search(pattern, prompt_line)
-                    bracket_contents.append(match.group())
-                    prompt_line = prompt_line[:match.start()] + prompt_line[match.end():]
+    @staticmethod
+    def split_prompt(prompt_line: str):
+        # 匹配被括号包围的内容
+        bracket_patterns = [r'\([^()]*\)', r'\[[^[]*\]', r'\{[^{}]*\}', r'<[^<>]*>']
+        bracket_contents = []
+        for pattern in bracket_patterns:
+            while re.search(pattern, prompt_line):
+                match = re.search(pattern, prompt_line)
+                bracket_contents.append(match.group())
+                prompt_line = prompt_line[:match.start()] + prompt_line[match.end():]
 
-            # 按逗号分割
-            comma_contents = re.split(r'[，,]', prompt_line)
-            # 去除空白内容
-            comma_contents = [content.strip() for content in comma_contents if content.strip()]
+        # 按逗号分割
+        comma_contents = re.split(r'[，,]', prompt_line)
+        # 去除空白内容
+        comma_contents = [content.strip() for content in comma_contents if content.strip()]
 
-            return bracket_contents + comma_contents
+        return bracket_contents + comma_contents
+
+    @staticmethod
+    def parse_addition_network(raw_tag: str):
+        # 去掉首尾的"<>"
+        raw_tag = raw_tag.strip('<>')
+        # 以":"分割字符串
+        tag_parts = raw_tag.split(':')
+
+        try:
+            # 尝试返回tag_parts[0] + ":" + tag_parts[1], float(tag_parts[2])
+            return tag_parts[0] + ":" + tag_parts[1], float(tag_parts[2])
+        except (IndexError, ValueError):
+            try:
+                # 如果出错，尝试返回tag_parts[0] + ":"
+                return tag_parts[0] + ":" + tag_parts[1], 0
+            except IndexError:
+                # 如果还出错，返回tag_parts[0] + ":?"
+                return tag_parts[0] + ":?", 0
 
     # @staticmethod
     # def parse_prompts(prompt_text: str):
@@ -278,7 +302,7 @@ class Prompts:
         data_tag = []
         data_weight = []
         for tag in tags:
-            raw_tags, tag_weights = Prompts.analysis_tag(tag)
+            raw_tags, tag_weights = Prompts.analysis_raw_tag(tag)
             if len(raw_tags) == 0:
                 continue
             for raw_tag, tag_weight in zip(raw_tags, tag_weights):
@@ -298,49 +322,84 @@ class Prompts:
         }
 
     @staticmethod
-    def analysis_tag(tag: str):
-        weight_list = []
-        tag_list = []
-        if tag.startswith('[') or tag.endswith(']'):
-            raw_tag, weight = parse_wrapper(tag, '[', ']', WEIGHT_DEC_BASE)
-            pure_tag, weight2 = parse_tag_colon_weight(raw_tag)
-            tag_list.append(pure_tag)
-            weight_list.append(weight * weight2)
-        elif tag.startswith('{') or tag.endswith('}'):
-            raw_tag, weight = parse_wrapper(tag, '{', '}', WEIGHT_INC_BASE)
-            pure_tag, weight2 = parse_tag_colon_weight(raw_tag)
-            tag_list.append(pure_tag)
-            weight_list.append(weight * weight2)
-        elif tag.startswith('(') or tag.endswith(')'):
-            # TODO: Cannot parse (A, B, C: weight)
-            if ':' in tag:
-                sub_tags = tag.replace('(', '').replace(')', '').split(':')
-                for sub_tag in sub_tags:
-                    weight = try_float(sub_tag)
-                    if weight:
-                        weight_list.append(weight)
-                    else:
-                        tag_list.append(sub_tag)
+    def analysis_raw_tag(raw_tag):
+        tags = []
+        weights = []
+        if raw_tag.startswith('<') and raw_tag.endswith('>'):
+            result = Prompts.parse_addition_network(raw_tag)
+            tags.append(result)
+            weights.append(1.0)
+        elif raw_tag.startswith('{') and raw_tag.endswith('}'):
+            if '|' in raw_tag or ',' in raw_tag:
+                parts = re.split('[|,]', raw_tag[1:-1])
+                for part in parts:
+                    t, w = Prompts.analysis_raw_tag(part)
+                    tags.extend(t)
+                    weights.extend(w)
             else:
-                raw_tag, weight = parse_wrapper(tag, '(', ')', WEIGHT_INC_BASE)
-                pure_tag, weight2 = parse_tag_colon_weight(raw_tag)
-                tag_list.append(pure_tag)
-                weight_list.append(weight * weight2)
-        elif tag.startswith('<'):
-            sub_tags = tag.replace('<', '').replace('>', '').split(':')
-
-            weight = try_float(sub_tags[2]) if len(sub_tags) > 2 else None
-            weight = 1.0 if weight is None else weight
-            raw_tag = sub_tags[0] + ':' + sub_tags[1] if len(sub_tags) > 1 else sub_tags[0]
-
-            tag_list.append(raw_tag)
-            weight_list.append(weight)
+                tag, weight = parse_wrapper(raw_tag, '{', '}', WEIGHT_INC_BASE)
+                tags.append(tag)
+                weights.append(weight)
+        elif raw_tag.startswith('[') and raw_tag.endswith(']'):
+            tag, weight = parse_wrapper(raw_tag, '[', ']', WEIGHT_DEC_BASE)
+            tags.append(tag)
+            weights.append(weight)
+        elif raw_tag.startswith('(') and raw_tag.endswith(')'):
+            parts = raw_tag[1:-1].split(',')
+            for part in parts:
+                t, w = Prompts.analysis_raw_tag(part)
+                tags.extend(t)
+                weights.extend(w)
         else:
-            tag, weight = parse_tag_colon_weight(tag)
-            tag_list.append(tag)
-            weight_list.append(weight)
+            parts = raw_tag.split(':')
+            tags.append(parts[0])
+            weights.append(try_float(parts[1], 1.0) if len(parts) > 1 else 1.0)
+        return tags, weights
 
-        return tag_list, weight_list
+    # @staticmethod
+    # def analysis_tag(tag: str):
+    #     weight_list = []
+    #     tag_list = []
+    #     if tag.startswith('[') or tag.endswith(']'):
+    #         raw_tag, weight = parse_wrapper(tag, '[', ']', WEIGHT_DEC_BASE)
+    #         pure_tag, weight2 = parse_tag_colon_weight(raw_tag)
+    #         tag_list.append(pure_tag)
+    #         weight_list.append(weight * weight2)
+    #     elif tag.startswith('{') or tag.endswith('}'):
+    #         raw_tag, weight = parse_wrapper(tag, '{', '}', WEIGHT_INC_BASE)
+    #         pure_tag, weight2 = parse_tag_colon_weight(raw_tag)
+    #         tag_list.append(pure_tag)
+    #         weight_list.append(weight * weight2)
+    #     elif tag.startswith('(') or tag.endswith(')'):
+    #         # TODO: Cannot parse (A, B, C: weight)
+    #         if ':' in tag:
+    #             sub_tags = tag.replace('(', '').replace(')', '').split(':')
+    #             for sub_tag in sub_tags:
+    #                 weight = try_float(sub_tag)
+    #                 if weight:
+    #                     weight_list.append(weight)
+    #                 else:
+    #                     tag_list.append(sub_tag)
+    #         else:
+    #             raw_tag, weight = parse_wrapper(tag, '(', ')', WEIGHT_INC_BASE)
+    #             pure_tag, weight2 = parse_tag_colon_weight(raw_tag)
+    #             tag_list.append(pure_tag)
+    #             weight_list.append(weight * weight2)
+    #     elif tag.startswith('<'):
+    #         sub_tags = tag.replace('<', '').replace('>', '').split(':')
+    #
+    #         weight = try_float(sub_tags[2]) if len(sub_tags) > 2 else None
+    #         weight = 1.0 if weight is None else weight
+    #         raw_tag = sub_tags[0] + ':' + sub_tags[1] if len(sub_tags) > 1 else sub_tags[0]
+    #
+    #         tag_list.append(raw_tag)
+    #         weight_list.append(weight)
+    #     else:
+    #         tag, weight = parse_tag_colon_weight(tag)
+    #         tag_list.append(tag)
+    #         weight_list.append(weight)
+    #
+    #     return tag_list, weight_list
 
     @staticmethod
     def merge_tag_data_dict(base: dict, update: dict):
