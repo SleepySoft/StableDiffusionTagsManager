@@ -7,7 +7,7 @@ from PyQt5.QtCore import Qt, QDataStream
 from PyQt5.QtCore import QMimeData
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QPlainTextEdit, \
     QGroupBox, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QAbstractItemView, QDialog, QPushButton, \
-    QDialogButtonBox, QCheckBox, QMessageBox, QMenu, QAction, QInputDialog
+    QDialogButtonBox, QCheckBox, QMessageBox, QMenu, QAction, QInputDialog, QSplitter
 
 from Prompts import Prompts
 from SaveTagsWindow import SavePromptsDialog
@@ -30,7 +30,8 @@ class GenerateWindow(QMainWindow):
         self.current_depot_file = ''
 
         # Create the root layout as a horizontal layout
-        root_layout = QHBoxLayout()
+        # root_layout = QHBoxLayout()
+        root_layout = QSplitter(Qt.Horizontal)
 
         # ----------------- Left part - group group box -----------------
 
@@ -81,7 +82,7 @@ class GenerateWindow(QMainWindow):
 
         group_view_layout.addWidget(tab_widget)
 
-        root_layout.addWidget(group_view, 20)
+        root_layout.addWidget(group_view)
 
         # ---------------------------------------------------------------------------
 
@@ -114,8 +115,6 @@ class GenerateWindow(QMainWindow):
         self.tag_table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.tag_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.tag_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        # self.tag_table.setDragEnabled(True)
-        # self.tag_table.setDefaultDropAction(Qt.MoveAction)
 
         self.tag_table.cellDoubleClicked.connect(self.on_tag_table_double_click)
         self.tag_table.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -160,7 +159,7 @@ class GenerateWindow(QMainWindow):
         # self.text_free = QPlainTextEdit()
         # tag_free_input_tab_layout.addWidget(self.text_free)
 
-        root_layout.addWidget(self.tab_structured_raw_widget, 35)
+        root_layout.addWidget(self.tab_structured_raw_widget)
 
         # ---------------------------------------------------------------------------
 
@@ -172,12 +171,6 @@ class GenerateWindow(QMainWindow):
         action_view_layout = QHBoxLayout()
 
         line = QVBoxLayout()
-        # # Create a button named "生成"
-        # generate_button = QPushButton("生成", self)
-        # # Connect the button to the on_generate function
-        # generate_button.clicked.connect(self.do_generate)
-        # # Add the button to the action_view_layout
-        # line.addWidget(generate_button)
 
         generate_button = QPushButton("保存为", self)
         generate_button.clicked.connect(self.do_save)
@@ -192,21 +185,6 @@ class GenerateWindow(QMainWindow):
         positive_view = QGroupBox("正向Tag")
         positive_view_layout = QVBoxLayout()
 
-        # self.positive_table = TagEditTableWidget(self.tag_manager, GENERATE_EDIT_COLUMNS)
-        #
-        # self.positive_table.horizontalHeader().setSectionsClickable(True)
-        # self.positive_table.horizontalHeader().sectionClicked.connect(self.positive_table.sortByColumn)
-        #
-        # self.positive_table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        # self.positive_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        # self.positive_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        #
-        # self.positive_table.cellDoubleClicked.connect(self.on_tag_table_double_click)
-        # self.positive_table.setContextMenuPolicy(Qt.CustomContextMenu)
-        # self.positive_table.customContextMenuRequested.connect(self.on_positive_table_right_click)
-        #
-        # positive_view_layout.addWidget(self.positive_table)
-
         self.text_positive_prompts = PromptPlainTextEdit(True)
         positive_view_layout.addWidget(self.text_positive_prompts)
 
@@ -216,21 +194,6 @@ class GenerateWindow(QMainWindow):
         # Create the group view named "Negative" that wraps a multiple line text editor
         negative_view = QGroupBox("反向Tag")
         negative_view_layout = QVBoxLayout()
-
-        # self.negative_table = TagEditTableWidget(self.tag_manager, GENERATE_EDIT_COLUMNS)
-        #
-        # self.negative_table.horizontalHeader().setSectionsClickable(True)
-        # self.negative_table.horizontalHeader().sectionClicked.connect(self.negative_table.sortByColumn)
-        #
-        # self.negative_table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        # self.negative_table.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        # self.negative_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        #
-        # self.negative_table.cellDoubleClicked.connect(self.on_tag_table_double_click)
-        # self.negative_table.setContextMenuPolicy(Qt.CustomContextMenu)
-        # self.negative_table.customContextMenuRequested.connect(self.on_negative_table_right_click)
-        #
-        # negative_view_layout.addWidget(self.negative_table)
 
         self.text_negative_prompts = PromptPlainTextEdit(False)
         negative_view_layout.addWidget(self.text_negative_prompts)
@@ -242,13 +205,13 @@ class GenerateWindow(QMainWindow):
         right_layout.setContentsMargins(0, 0, 0, 0)
         right_widget = QWidget()
         right_widget.setLayout(right_layout)
+        root_layout.addWidget(right_widget)
 
         # Set the root layout
-        root_widget = QWidget()
-        root_widget.setLayout(root_layout)
-        self.setCentralWidget(root_widget)
-
-        root_layout.addWidget(right_widget, 45)
+        # root_widget = QWidget()
+        # root_widget.setLayout(root_layout)
+        root_layout.setSizes([1, 3, 3])
+        self.setCentralWidget(root_layout)
 
     def on_widget_activated(self):
         self.refresh_depot_tree()

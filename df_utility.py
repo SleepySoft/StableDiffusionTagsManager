@@ -1,6 +1,46 @@
+import threading
 import traceback
 import pandas as pd
-import translators as ts
+
+# try:
+#     import translators as ts
+# except Exception as e:
+#     print(e)
+#     ts = None
+# finally:
+#     pass
+
+
+ts = None
+
+
+class ImportThread(threading.Thread):
+    def __init__(self):
+        super(ImportThread, self).__init__()
+
+    def run(self):
+        try:
+            import translators
+            global ts
+            ts = translators
+        except Exception as e:
+            print(e)
+        finally:
+            pass
+
+
+# 设置超时时间（秒）
+timeout = 1
+
+
+thread = ImportThread()
+thread.start()
+
+thread.join(timeout)
+
+if thread.is_alive():
+    print(f"Import translator module fail, timeout = {timeout}s. The translate feature maybe not available.")
+
 
 RIGHT_INDICATOR = "__Right_Sleepy_299792458"
 
@@ -30,7 +70,7 @@ def translate_df(df, text_field, trans_field, use_cache: bool, offline: bool = F
             translated_text = None
             if use_cache and original_text in translate_cache.keys():
                 translated_text = translate_cache[original_text]
-            if translated_text is None and not offline:
+            if translated_text is None and not offline and ts is not None:
                 translated_text = ts.translate_text(
                     query_text=original_text,
                     translator='alibaba',
