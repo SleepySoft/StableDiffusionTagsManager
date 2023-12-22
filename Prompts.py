@@ -11,6 +11,9 @@ WEIGHT_INC_BASE = 1.1
 WEIGHT_DEC_BASE = 0.9
 
 
+EXTRA_FLAGS = ['ENSD:', 'Seed:', 'Model:']
+
+
 def try_float(text: str, on_fail: float or None = None) -> float or None:
     try:
         return float(text)
@@ -39,6 +42,21 @@ def parse_tag_colon_weight(tag: str) -> (str, float):
         return tag, 1.0
 
 
+def is_kv_like(prompt_line: str):
+    # 按逗号分割字符串
+    items = prompt_line.split(',')
+    for item in items:
+        if item.strip() == '':
+            continue
+        # 检查每一项是否由冒号分隔key和value
+        if ':' not in item:
+            return False
+        key, _ = item.split(':')
+        if len(key.strip()) == 0:
+            return False
+    return True
+
+
 def guess_prompt_group(prompt_line: str) -> Tuple[str, Union[str, dict]]:
     if prompt_line.strip() == '':
         return '', prompt_line
@@ -51,22 +69,10 @@ def guess_prompt_group(prompt_line: str) -> Tuple[str, Union[str, dict]]:
     if match:
         return 'negative', match.group(1)
 
-    # 按逗号分割字符串
-    items = prompt_line.split(',')
+    if all(flag in prompt_line for flag in EXTRA_FLAGS) and is_kv_like(prompt_line):
+        return 'extra', prompt_line
 
-    for item in items:
-        if item.strip() == '':
-            continue
-
-        # 检查每一项是否由冒号分隔key和value
-        if not ':' in item:
-            return '', prompt_line
-
-        key, _ = item.split(':')
-        if len(key.strip()) == 0:
-            return '', prompt_line
-
-    return 'extra', prompt_line
+    return '', prompt_line
 
 
 class Prompts:
@@ -188,7 +194,7 @@ class Prompts:
                 if group == 'positive':
                     positive_lines.clear()
                 if group == 'negative':
-                    prompt_flag = 'positive'
+                    prompt_flag = 'negative'
                 if empty_line_count > 0:
                     prompt_flag = 'maybe_negative'
 
@@ -250,53 +256,6 @@ class Prompts:
                 # 如果还出错，返回tag_parts[0] + ":?"
                 return tag_parts[0] + ":?", 0
 
-    # @staticmethod
-    # def parse_prompts(prompt_text: str):
-    #     lines = prompt_text.split('\n')
-    #     lines = [line.strip() for line in lines]
-    #     prompt_text = '\n'.join(lines)
-    #
-    #     positive_start = prompt_text.lower().find('positive prompt')
-    #     if positive_start != -1:
-    #         positive_start += len('positive prompt')
-    #         positive_start = prompt_text.find(':', positive_start) + 1
-    #     else:
-    #         positive_start = 0
-    #
-    #     negative_start = prompt_text.lower().find('negative prompt')
-    #     if negative_start != -1:
-    #         positive_end = negative_start
-    #         negative_start += len('negative prompt')
-    #         negative_start = prompt_text.find(':', negative_start) + 1
-    #         negative_end = prompt_text.find('\n', negative_start)
-    #     else:
-    #         # Find the position of two consecutive newlines
-    #         double_newline_pos = prompt_text.find('\n\n')
-    #         if double_newline_pos != -1:
-    #             positive_end = double_newline_pos
-    #         else:
-    #             first_line_end = prompt_text.find('\n')
-    #             second_line_end = prompt_text.find('\n', first_line_end + 1)
-    #             positive_end = first_line_end if first_line_end > 0 else len(prompt_text)
-    #
-    #         negative_start = positive_end
-    #         negative_end = second_line_end if second_line_end > 0 else len(prompt_text)
-    #
-    #     positive_tags_string = prompt_text[positive_start:positive_end].strip()
-    #     negative_tags_string = prompt_text[negative_start:negative_end].strip()
-    #     for keyword in SPECIAL_KEYWORDS:
-    #         positive_tags_string = positive_tags_string.replace(keyword, ',')
-    #         negative_tags_string = negative_tags_string.replace(keyword, ',')
-    #     extra_data_string = prompt_text[negative_end + 1:].strip() if negative_end > 0 else ''
-    #
-    #     positive_tags_raw = positive_tags_string.replace('\n', ',').split(',')
-    #     negative_tags_raw = negative_tags_string.replace('\n', ',').split(',')
-    #
-    #     positive_tags = [tag.strip() for tag in positive_tags_raw if tag.strip() != '']
-    #     negative_tags = [tag.strip() for tag in negative_tags_raw if tag.strip() != '']
-    #
-    #     return positive_tags, negative_tags, extra_data_string
-
     @staticmethod
     def tags_list_to_tag_data(tags: [str]) -> dict:
         data_tag = []
@@ -326,9 +285,9 @@ class Prompts:
         tags = []
         weights = []
         if raw_tag.startswith('<') and raw_tag.endswith('>'):
-            result = Prompts.parse_addition_network(raw_tag)
-            tags.append(result)
-            weights.append(1.0)
+            t, w = Prompts.parse_addition_network(raw_tag)
+            tags.append(t)
+            weights.append(w)
         elif raw_tag.startswith('{') and raw_tag.endswith('}'):
             if '|' in raw_tag or ',' in raw_tag:
                 parts = re.split('[|,]', raw_tag[1:-1])
@@ -355,51 +314,6 @@ class Prompts:
             tags.append(parts[0])
             weights.append(try_float(parts[1], 1.0) if len(parts) > 1 else 1.0)
         return tags, weights
-
-    # @staticmethod
-    # def analysis_tag(tag: str):
-    #     weight_list = []
-    #     tag_list = []
-    #     if tag.startswith('[') or tag.endswith(']'):
-    #         raw_tag, weight = parse_wrapper(tag, '[', ']', WEIGHT_DEC_BASE)
-    #         pure_tag, weight2 = parse_tag_colon_weight(raw_tag)
-    #         tag_list.append(pure_tag)
-    #         weight_list.append(weight * weight2)
-    #     elif tag.startswith('{') or tag.endswith('}'):
-    #         raw_tag, weight = parse_wrapper(tag, '{', '}', WEIGHT_INC_BASE)
-    #         pure_tag, weight2 = parse_tag_colon_weight(raw_tag)
-    #         tag_list.append(pure_tag)
-    #         weight_list.append(weight * weight2)
-    #     elif tag.startswith('(') or tag.endswith(')'):
-    #         # TODO: Cannot parse (A, B, C: weight)
-    #         if ':' in tag:
-    #             sub_tags = tag.replace('(', '').replace(')', '').split(':')
-    #             for sub_tag in sub_tags:
-    #                 weight = try_float(sub_tag)
-    #                 if weight:
-    #                     weight_list.append(weight)
-    #                 else:
-    #                     tag_list.append(sub_tag)
-    #         else:
-    #             raw_tag, weight = parse_wrapper(tag, '(', ')', WEIGHT_INC_BASE)
-    #             pure_tag, weight2 = parse_tag_colon_weight(raw_tag)
-    #             tag_list.append(pure_tag)
-    #             weight_list.append(weight * weight2)
-    #     elif tag.startswith('<'):
-    #         sub_tags = tag.replace('<', '').replace('>', '').split(':')
-    #
-    #         weight = try_float(sub_tags[2]) if len(sub_tags) > 2 else None
-    #         weight = 1.0 if weight is None else weight
-    #         raw_tag = sub_tags[0] + ':' + sub_tags[1] if len(sub_tags) > 1 else sub_tags[0]
-    #
-    #         tag_list.append(raw_tag)
-    #         weight_list.append(weight)
-    #     else:
-    #         tag, weight = parse_tag_colon_weight(tag)
-    #         tag_list.append(tag)
-    #         weight_list.append(weight)
-    #
-    #     return tag_list, weight_list
 
     @staticmethod
     def merge_tag_data_dict(base: dict, update: dict):
