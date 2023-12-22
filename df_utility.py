@@ -1,71 +1,8 @@
-import time
-import random
-import hashlib
-import requests
 import traceback
 import pandas as pd
+import translators as ts
 
 RIGHT_INDICATOR = "__Right_Sleepy_299792458"
-
-
-# From new Bing
-# Thanks youdao providing API KEY free translate service.
-
-
-def youdao_translate(query, from_lang='AUTO', to_lang='AUTO'):
-    url = 'http://fanyi.youdao.com/translate'
-    client = "fanyideskweb"
-    key = "aNPG!!u6sesA>hBAW1@(-"
-    salt = str(int(time.time()*1000) + random.randint(0, 10))
-    sign = hashlib.md5((client + query + salt + key).encode('utf-8')).hexdigest()
-
-    data = {
-        "i": query,
-        "from": from_lang,
-        "to": to_lang,
-        "smartresult": "dict",
-        "client": client,
-        "salt": salt,
-        "sign": sign,
-        "doctype": "json",
-        "version": "2.1",
-        "keyfrom": "fanyi.web",
-        "action": "FY_BY_CLICKBUTTION"
-    }
-
-    res = requests.post(url, data=data).json()
-    return res['translateResult'][0][0]['tgt']
-
-
-# def youdao_translate(query, from_lang='AUTO', to_lang='AUTO'):
-#     url = 'http://fanyi.youdao.com/translate'
-#     data = {
-#         "i": query,
-#         "from": from_lang,
-#         "to": to_lang,
-#         "smartresult": "dict",
-#         "client": "fanyideskweb",
-#         "salt": "16081210430989",
-#         "doctype": "json",
-#         "version": "2.1",
-#         "keyfrom": "fanyi.web",
-#         "action": "FY_BY_CLICKBUTTION"
-#     }
-#     res = requests.post(url, data=data).json()
-#     return res['translateResult'][0][0]['tgt']
-
-
-def deepl_translate(text, target_lang='ZH'):
-    url = "https://api.deepl.com/v2/translate"
-    auth_key = 'your-auth-key'  # 请替换为你自己的DeepL API密钥
-    data = {
-        'auth_key': auth_key,
-        'text': text,
-        'target_lang': target_lang,
-    }
-    response = requests.post(url, data=data)
-    result = response.json()
-    return result['translations'][0]['text']
 
 
 translate_cache = {}
@@ -73,9 +10,8 @@ translate_cache = {}
 
 def translate_df(df, text_field, trans_field, use_cache: bool, offline: bool = False) -> bool:
     """
-    Translates the text in the specified text_field of each row of the dataframe using youdao_translate function
+    Translates the text in the specified text_field of each row of the dataframe
     and fills the result to the specified trans_field if the trans_field is empty string.
-    Optimised by new bing.
 
     Args:
         df (pandas.DataFrame): The dataframe to translate.
@@ -95,7 +31,12 @@ def translate_df(df, text_field, trans_field, use_cache: bool, offline: bool = F
             if use_cache and original_text in translate_cache.keys():
                 translated_text = translate_cache[original_text]
             if translated_text is None and not offline:
-                translated_text = youdao_translate(original_text)
+                translated_text = ts.translate_text(
+                    query_text=original_text,
+                    translator='alibaba',
+                    from_language='en',
+                    to_language='cn',
+                    timeout=1)
                 translate_cache[original_text] = translated_text
             return '' if translated_text is None else translated_text
         return row[trans_field]
