@@ -418,7 +418,7 @@ class GenerateWindow(QMainWindow):
         if self.current_depot_file == '':
             return
         try:
-            with open(self.current_depot_file, 'wt') as f:
+            with open(self.current_depot_file, 'wt', encoding='utf-8') as f:
                 prompts = self.text_raw_sdtags.toPlainText()
                 f.write(prompts)
             QMessageBox.information(self, '成功', '保存成功')
@@ -473,7 +473,7 @@ class GenerateWindow(QMainWindow):
 
     def load_depot_file(self, file_path):
         try:
-            with open(file_path, 'rt') as f:
+            with open(file_path, 'rt', encoding='utf-8') as f:
                 file_data = f.read()
                 self.text_raw_sdtags.setPlainText(file_data)
 
