@@ -30,7 +30,7 @@ class ImportThread(threading.Thread):
 
 
 # 设置超时时间（秒）
-timeout = 1
+timeout = 3
 
 
 thread = ImportThread()
@@ -43,6 +43,16 @@ if thread.is_alive():
 
 
 RIGHT_INDICATOR = "__Right_Sleepy_299792458"
+
+
+df_translator = 'alibaba'
+
+
+translator_list = ['alibaba', 'baidu', 'youdao', 'google', 'bing', 'niutrans', 'mymemory', 'modernmt', 'volcengine',
+                   'iciba', 'iflytek', 'lingvanex', 'yandex', 'itranslate', 'systran', 'argos', 'apertium', 'reverso',
+                   'deepl', 'cloudtranslation', 'qqtransmart', 'translatecom', 'sogou', 'tilde', 'qqfanyi', 'papago',
+                   'translateme', 'mirai', 'iflyrec', 'yeekit', 'languagewire', 'caiyun', 'elia', 'judic', 'mglip',
+                   'utibet']
 
 
 translate_cache = {}
@@ -73,7 +83,7 @@ def translate_df(df, text_field, trans_field, use_cache: bool, offline: bool = F
             if translated_text is None and not offline and ts is not None:
                 translated_text = ts.translate_text(
                     query_text=original_text,
-                    translator='alibaba',
+                    translator=df_translator,
                     from_language='en',
                     to_language='cn',
                     timeout=1)

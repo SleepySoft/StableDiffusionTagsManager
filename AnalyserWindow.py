@@ -1,17 +1,17 @@
 import sys
 import time
+import df_utility
 
 from PyQt5 import QtCore, QtGui
 from PyQt5.QtCore import Qt, QDataStream
 from PyQt5.QtCore import QMimeData
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QPlainTextEdit, \
     QGroupBox, QTableWidget, QTableWidgetItem, QTreeWidget, QTreeWidgetItem, QAbstractItemView, QDialog, QPushButton, \
-    QDialogButtonBox, QCheckBox, QMessageBox, QMenu, QAction
+    QDialogButtonBox, QCheckBox, QMessageBox, QMenu, QAction, QComboBox
 
 from Prompts import Prompts
 from SaveTagsWindow import SavePromptsDialog
 from defines import ANALYSIS_README, PRESET_TAG_PATH, ANALYSIS_SHOW_COLUMNS
-from df_utility import *
 from TagManager import *
 from app_utility import *
 from ui_components import TagViewTableWidget, DraggableTree, DataFrameRowEditDialog
@@ -57,6 +57,13 @@ class AnalyserWindow(QWidget):
 
         # Create the menu layout as a horizontal layout
         menu_layout = QHBoxLayout()
+
+        self.translator_selector = QComboBox()
+        self.translator_selector.setEditable(False)
+        for translator in df_utility.translator_list:
+            self.translator_selector.addItem(translator.capitalize(), translator)
+        self.translator_selector.currentIndexChanged.connect(self.on_combox_translator_changed)
+        menu_layout.addWidget(self.translator_selector)
 
         # Add the '自动翻译' button to the menu layout and link it to the on_button_translate function
         auto_translate_button = QPushButton('自动翻译')
@@ -230,6 +237,9 @@ class AnalyserWindow(QWidget):
         # Show the menu at the position of the right click
         menu.exec_(self.negative_table.viewport().mapToGlobal(position))
 
+    def on_combox_translator_changed(self, _):
+        df_utility.df_translator = self.translator_selector.currentData()
+
     # Define a function to be called when the translate button is clicked
     def on_button_translate(self):
         # Pop up a message box with yes and no button
@@ -315,12 +325,12 @@ class AnalyserWindow(QWidget):
         selected_df = df.loc[df['tag'].isin(selected_tags), [PRIMARY_KEY, 'translate_cn']]
 
         if not selected_df.empty:
-            new_df = upsert_df_from_right(self.tag_manager.get_database(), selected_df, PRIMARY_KEY)
+            new_df = df_utility.upsert_df_from_right(self.tag_manager.get_database(), selected_df, PRIMARY_KEY)
             self.on_database_updated(new_df, False)
 
     def translate_unknown_tags(self):
-        if translate_df(self.positive_df, PRIMARY_KEY, 'translate_cn', True) and \
-                translate_df(self.negative_df, PRIMARY_KEY, 'translate_cn', True):
+        if df_utility.translate_df(self.positive_df, PRIMARY_KEY, 'translate_cn', True) and \
+                df_utility.translate_df(self.negative_df, PRIMARY_KEY, 'translate_cn', True):
             TagManager.dataframe_to_table_widget(
                 self.positive_table, self.positive_df, ANALYSIS_SHOW_COLUMNS, [], self.df_to_table_decorator)
             TagManager.dataframe_to_table_widget(
@@ -362,9 +372,9 @@ class AnalyserWindow(QWidget):
         if positive:
             if not self.tag_manager.get_database().empty:
                 self.positive_df = pd.DataFrame(self.prompts.positive_tag_data_dict)
-                self.positive_df = merge_df_keeping_left_value(
+                self.positive_df =df_utility. merge_df_keeping_left_value(
                     self.positive_df, self.tag_manager.get_database(), PRIMARY_KEY)
-                translate_df(self.positive_df, PRIMARY_KEY, 'translate_cn', True, True)
+                df_utility.translate_df(self.positive_df, PRIMARY_KEY, 'translate_cn', True, True)
             else:
                 self.positive_df = pd.DataFrame(self.prompts.positive_tag_data_dict, columns=DATABASE_FIELDS).fillna('')
             if refresh_ui:
@@ -374,9 +384,9 @@ class AnalyserWindow(QWidget):
         if negative:
             if not self.tag_manager.get_database().empty:
                 self.negative_df = pd.DataFrame(self.prompts.negative_tag_data_dict)
-                self.negative_df = merge_df_keeping_left_value(
+                self.negative_df = df_utility.merge_df_keeping_left_value(
                     self.negative_df, self.tag_manager.get_database(), PRIMARY_KEY)
-                translate_df(self.negative_df, PRIMARY_KEY, 'translate_cn', True, True)
+                df_utility.translate_df(self.negative_df, PRIMARY_KEY, 'translate_cn', True, True)
             else:
                 self.negative_df = pd.DataFrame(self.prompts.negative_tag_data_dict, columns=DATABASE_FIELDS).fillna('')
             if refresh_ui:
