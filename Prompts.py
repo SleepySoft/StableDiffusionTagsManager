@@ -88,7 +88,7 @@ class Prompts:
 
     def from_file(self, file_name: str) -> bool:
         try:
-            with open(file_name, 'rt') as f:
+            with open(file_name, 'rt', encoding='utf-8') as f:
                 return self.from_text(f.read())
         except Exception as e:
             print(e)

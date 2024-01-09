@@ -409,7 +409,7 @@ class TagEditTableWidget(QTableWidget):
         for shuffle, group in df_wildcards.groupby('shuffle'):
             tags = ', '.join(group['tag'])
             wildcards_file_name = f"{wildcards_path}/{shuffle}.txt"
-            with open(wildcards_file_name, 'w') as f:
+            with open(wildcards_file_name, 'w', encoding='utf-8') as f:
                 f.write(tags)
             wildcards.append(f"__{shuffle}__")
 
@@ -429,7 +429,7 @@ class TagEditTableWidget(QTableWidget):
 
             flat_tags.append(tag)
 
-        with open(file_name, 'w') as f:
+        with open(file_name, 'w', encoding='utf-8') as f:
             f.write(', '.join(wildcards + flat_tags))
 
     # --------------------------------------------------------------------------------------------

@@ -93,7 +93,7 @@ class SavePromptsDialog(QDialog):
         if file_name:
             if not file_name.endswith(extension):
                 file_name += extension
-            with open(file_name, 'w') as file:
+            with open(file_name, 'w', encoding='utf-8') as file:
                 file.write(self.text_tags.toPlainText())
                 file.write('\n\n')
                 file.write(self.text_extras.toPlainText())

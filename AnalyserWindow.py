@@ -14,6 +14,7 @@ from SaveTagsWindow import SavePromptsDialog
 from defines import ANALYSIS_README, PRESET_TAG_PATH, ANALYSIS_SHOW_COLUMNS
 from TagManager import *
 from app_utility import *
+from translator import translator_list
 from ui_components import TagViewTableWidget, DraggableTree, DataFrameRowEditDialog
 
 
@@ -60,7 +61,7 @@ class AnalyserWindow(QWidget):
 
         self.translator_selector = QComboBox()
         self.translator_selector.setEditable(False)
-        for translator in df_utility.translator_list:
+        for translator in translator_list:
             self.translator_selector.addItem(translator.capitalize(), translator)
         self.translator_selector.currentIndexChanged.connect(self.on_combox_translator_changed)
         menu_layout.addWidget(self.translator_selector)

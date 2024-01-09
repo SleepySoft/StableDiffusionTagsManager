@@ -1,61 +1,12 @@
-import threading
 import traceback
 import pandas as pd
 
-# try:
-#     import translators as ts
-# except Exception as e:
-#     print(e)
-#     ts = None
-# finally:
-#     pass
-
-
-ts = None
-
-
-class ImportThread(threading.Thread):
-    def __init__(self):
-        super(ImportThread, self).__init__()
-
-    def run(self):
-        try:
-            import translators
-            global ts
-            ts = translators
-        except Exception as e:
-            print(e)
-        finally:
-            pass
-
-
-# 设置超时时间（秒）
-timeout = 3
-
-
-thread = ImportThread()
-thread.start()
-
-thread.join(timeout)
-
-if thread.is_alive():
-    print(f"Import translator module fail, timeout = {timeout}s. The translate feature maybe not available.")
-
+from translator import translate
 
 RIGHT_INDICATOR = "__Right_Sleepy_299792458"
 
 
 df_translator = 'alibaba'
-
-
-translator_list = ['alibaba', 'baidu', 'youdao', 'google', 'bing', 'niutrans', 'mymemory', 'modernmt', 'volcengine',
-                   'iciba', 'iflytek', 'lingvanex', 'yandex', 'itranslate', 'systran', 'argos', 'apertium', 'reverso',
-                   'deepl', 'cloudtranslation', 'qqtransmart', 'translatecom', 'sogou', 'tilde', 'qqfanyi', 'papago',
-                   'translateme', 'mirai', 'iflyrec', 'yeekit', 'languagewire', 'caiyun', 'elia', 'judic', 'mglip',
-                   'utibet']
-
-
-translate_cache = {}
 
 
 def translate_df(df, text_field, trans_field, use_cache: bool, offline: bool = False) -> bool:
@@ -77,17 +28,7 @@ def translate_df(df, text_field, trans_field, use_cache: bool, offline: bool = F
     def translate_text(row) -> str:
         if not row[trans_field]:
             original_text = row[text_field]
-            translated_text = None
-            if use_cache and original_text in translate_cache.keys():
-                translated_text = translate_cache[original_text]
-            if translated_text is None and not offline and ts is not None:
-                translated_text = ts.translate_text(
-                    query_text=original_text,
-                    translator=df_translator,
-                    from_language='en',
-                    to_language='cn',
-                    timeout=1)
-                translate_cache[original_text] = translated_text
+            translated_text = translate(original_text, df_translator, use_cache, offline)
             return '' if translated_text is None else translated_text
         return row[trans_field]
 
