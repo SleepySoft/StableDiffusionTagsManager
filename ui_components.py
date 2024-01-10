@@ -171,7 +171,10 @@ class DraggableTree(QTreeWidget):
                 # Create a new row with the tags and path
                 new_row = pd.DataFrame({PRIMARY_KEY: [tag], 'path': [_path]})
                 # Append the new row to the dataframe
-                df = df.append(new_row, ignore_index=True)
+                # df = df.append(new_row, ignore_index=True)
+
+                # Higher version
+                df = pd.concat([df, new_row], ignore_index=True)
         return df
 
     def save_expand_items(self) -> list:

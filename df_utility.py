@@ -38,6 +38,7 @@ def translate_df(df, text_field, trans_field, use_cache: bool, offline: bool = F
             return True
         except Exception as e:
             print(e)
+            print(traceback.format_exc())
             return False
         finally:
             pass
