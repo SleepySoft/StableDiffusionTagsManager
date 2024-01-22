@@ -91,13 +91,13 @@ class TagManager:
     def load_tag_data(public_db: str, private_db: str) -> pd.DataFrame:
         # Load public.csv to df_public if it exists
         try:
-            df_public = pd.read_csv(public_db)
+            df_public = pd.read_csv(public_db, encoding='utf-8')
         except FileNotFoundError:
             df_public = pd.DataFrame(columns=[PRIMARY_KEY])
 
         # Load private.csv to df_private if it exists
         try:
-            df_private = pd.read_csv(private_db)
+            df_private = pd.read_csv(private_db, encoding='utf-8')
         except FileNotFoundError:
             df_private = pd.DataFrame(columns=[PRIMARY_KEY])
 
